@@ -33,6 +33,11 @@
   </div>
 </div>
 
+<div id="tabbar">
+  <div id="tab-list"></div>
+  <button id="tab-new" onclick="newTab()" title="New tab (Ctrl+T)">+</button>
+</div>
+
 <div id="toolbar">
   <div id="toolbar-left">
     <button class="tb-btn" onclick="newWindow()" title="New window (Ctrl+Shift+N)">
@@ -83,11 +88,6 @@
       </svg>
     </button>
   </div>
-</div>
-
-<div id="tabbar">
-  <div id="tab-list"></div>
-  <button id="tab-new" onclick="newTab()" title="New tab (Ctrl+T)">+</button>
 </div>
 
 <!-- Find & Replace -->
@@ -164,6 +164,8 @@
     <div id="drop-overlay" class="hidden"><div id="drop-label">Drop file to open</div></div>
   </div>
 </div>
+
+<div id="zen-hint">Press <kbd>Esc</kbd> to exit focus mode</div>
 
 <div id="statusbar">
   <span id="status-sections">0 sections</span>

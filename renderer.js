@@ -564,7 +564,13 @@ function renderOrganised() {
     handle.addEventListener('mousedown', () => { dragFromHandle = true })
     head.querySelector('.chevron').addEventListener('click', e => { e.stopPropagation(); toggleSection(s.title) })
     head.querySelector('.sec-title').addEventListener('click', e => { e.stopPropagation(); openSectionEdit(block, s) })
-    head.addEventListener('click', e => { if (!['sec-title', 'chevron', 'drag-handle'].some(c => e.target.classList.contains(c))) toggleSection(s.title) })
+    // Only toggle collapse when clicking the head background itself — not any child element
+    // that already has its own click handler. Using exact target match prevents double-fire.
+    head.addEventListener('click', e => {
+      if (e.target === head || e.target.classList.contains('sec-tag') || e.target.classList.contains('sec-parent-badge')) {
+        toggleSection(s.title)
+      }
+    })
     block.addEventListener('dragstart', e => {
       if (!dragFromHandle) { e.preventDefault(); return }
       dragSrc = block; block.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'
@@ -896,6 +902,11 @@ function toggleSidebar() {
 function toggleZen() {
   zenMode = !zenMode
   document.body.classList.toggle('zen', zenMode)
+  if (zenMode) {
+    // Re-trigger the CSS fade animation by replacing the node with a fresh clone
+    const hint = document.getElementById('zen-hint')
+    if (hint) { const fresh = hint.cloneNode(true); hint.replaceWith(fresh) }
+  }
 }
 
 // ── Theme (system / dark / light / plugin themes) ───────────────────────
@@ -1195,7 +1206,10 @@ document.addEventListener('keydown', e => {
       if (e.key === 'u') { e.preventDefault(); applyFormat('underline') }
     }
   }
-  if (e.key === 'Escape') { closeTableBuilder(); saveDialog.classList.add('hidden'); closeDropdown() }
+  if (e.key === 'Escape') {
+    if (zenMode) { toggleZen(); return }
+    closeTableBuilder(); saveDialog.classList.add('hidden'); closeDropdown()
+  }
 })
 
 // ── IPC ────────────────────────────────────────────────────────────────────

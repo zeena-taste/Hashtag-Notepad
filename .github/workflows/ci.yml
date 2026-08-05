@@ -1,0 +1,34 @@
+# Runs on every push/PR to main. Doesn't publish anything — it's just a fast
+# sanity check that (a) the JS is syntactically valid and (b) electron-builder
+# can actually assemble the app (an unpacked "dir" build, not a full installer,
+# so it finishes in under a minute).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sanity-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Syntax check
+        run: |
+          node --check main.js
+          node --check renderer.js
+          node --check store.js
+          node --check plugins.js
+
+      - name: Unpacked build (no installer, just checks packaging works)
+        run: npx electron-builder --linux dir

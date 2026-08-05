@@ -95,3 +95,8 @@ plain text line
 ## Contributing
 
 This is an open-source, learning-by-doing project — issues and PRs are welcome. See `PLUGINS.md` if you want to contribute a color theme without touching the app's source at all.
+
+
+<!-- hashtag-notepad:state
+{"done":[],"order":[],"collapsed":["Hashtag Notepad v3","Build it yourself","What's new in v3"]}
+-->

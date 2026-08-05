@@ -1,0 +1,82 @@
+# Builds real installers for Windows, macOS, and Linux and attaches them to
+# a GitHub Release. Triggered by pushing a tag like v3.0.0.
+#
+#   git tag v3.0.0
+#   git push origin v3.0.0
+#
+# That's it — this workflow does the rest. Each OS's build step can only run
+# on that OS (Apple's tooling requires a real Mac for the .dmg, for instance),
+# which is exactly why this uses a 3-runner matrix instead of one machine.
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # needed so the release job can create a Release and upload files
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false   # if the mac build fails, still let win/linux finish
+      matrix:
+        include:
+          - os: windows-latest
+            build_cmd: npm run build:win
+          - os: macos-latest
+            build_cmd: npm run build:mac
+          - os: ubuntu-latest
+            build_cmd: npm run build:linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: ${{ matrix.build_cmd }}
+        env:
+          # Skip electron-builder's automatic code-signing lookup — we don't
+          # have a paid Apple/Windows signing certificate, and without this
+          # electron-builder can fail trying to find one that doesn't exist.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}
+          path: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.zip
+            dist/*.AppImage
+            dist/*.deb
+          if-no-files-found: warn
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect installers into one folder
+        run: |
+          mkdir -p release
+          find artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.zip" -o -name "*.AppImage" -o -name "*.deb" \) -exec cp {} release/ \;
+          ls -la release
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true
