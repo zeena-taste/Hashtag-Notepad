@@ -1,0 +1,7 @@
+{
+  "id": "solarized-dark",
+  "name": "Solarized Dark",
+  "type": "theme",
+  "css": "theme.css",
+  "author": "Hashtag Notepad sample plugin"
+}

@@ -1,0 +1,7 @@
+{
+  "id": "nord",
+  "name": "Nord",
+  "type": "theme",
+  "css": "theme.css",
+  "author": "Hashtag Notepad sample plugin"
+}

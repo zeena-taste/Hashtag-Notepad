@@ -1,0 +1,17 @@
+/* Nord — sample theme plugin. Copy this folder as a starting point
+   for your own theme; see PLUGINS.md for what each variable controls. */
+body.theme-nord {
+  --bg: #2e3440; --bg2: #3b4252; --bg3: #434c5e; --bg4: #4c566a;
+  --border: #4c566a; --border2: #5e6779;
+  --text: #e5e9f0; --text2: #a8b0c2; --text3: #667089;
+  --accent: #88c0d0; --accent-bg: #34404d; --accent-text: #8fbcbb;
+  --titlebar: #242933; --statusbar-bg: #5e81ac; --statusbar-text: #eceff4;
+  --done-text: #616e88; --check-border: #4c566a; --check-done-bg: #434c5e;
+  --drag-handle: #4c566a;
+  --section-head: #3b4252; --section-head-hover: #434c5e; --section-body: #2e3440;
+  --arrow-bg: #2b3542; --arrow-border: #4c7a6b; --arrow-text: #a3be8c;
+  --md-h1: #b48ead; --md-h2: #81a1c1; --md-h3: #8fbcbb;
+  --md-h4: #88c0d0; --md-h5: #7d98b3; --md-h6: #6b7a99;
+  --md-code: #d08770; --md-quote: #a3be8c; --md-bold: #ebcb8b; --md-italic: #81a1c1;
+  --inline-edit-border: #88c0d0; --inline-edit-bg: #242933; --fmt-bar: #242933;
+}

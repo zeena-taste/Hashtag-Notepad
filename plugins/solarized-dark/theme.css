@@ -1,0 +1,16 @@
+/* Solarized Dark — sample theme plugin. */
+body.theme-solarized-dark {
+  --bg: #002b36; --bg2: #073642; --bg3: #0a3d4a; --bg4: #114a58;
+  --border: #0d3b45; --border2: #1a4a56;
+  --text: #93a1a1; --text2: #657b83; --text3: #4c6069;
+  --accent: #268bd2; --accent-bg: #0a3d52; --accent-text: #2aa1e0;
+  --titlebar: #00212b; --statusbar-bg: #268bd2; --statusbar-text: #eee8d5;
+  --done-text: #586e75; --check-border: #0d3b45; --check-done-bg: #0a3d4a;
+  --drag-handle: #114a58;
+  --section-head: #073642; --section-head-hover: #0a3d4a; --section-body: #00303c;
+  --arrow-bg: #06323d; --arrow-border: #2aa198; --arrow-text: #6fbf9d;
+  --md-h1: #d33682; --md-h2: #268bd2; --md-h3: #2aa198;
+  --md-h4: #859900; --md-h5: #b58900; --md-h6: #6c71c4;
+  --md-code: #cb4b16; --md-quote: #859900; --md-bold: #b58900; --md-italic: #6c71c4;
+  --inline-edit-border: #268bd2; --inline-edit-bg: #00212b; --fmt-bar: #00212b;
+}
