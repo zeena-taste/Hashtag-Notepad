@@ -57,15 +57,24 @@ function escapeHtml(s) {
 }
 function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') }
 
+// Guard flag — prevents blur events on destroyed/replaced DOM nodes from
+// re-triggering a commit that's already in progress (the main crash cause).
+let _committing = false
+
 // Replace a <textarea>'s value while keeping the browser's native undo/redo
-// stack intact (a plain `.value = x` assignment wipes undo history — that
-// was one of the reported bugs). execCommand is deprecated but Electron
-// ships a fixed, known Chromium version, so it's safe to rely on here.
+// stack intact. execCommand is deprecated but Electron ships a fixed,
+// known Chromium version so it's safe to rely on here.
 function setEditorValue(ta, newValue) {
-  ta.focus()
-  ta.select()
-  const ok = document.execCommand('insertText', false, newValue)
-  if (!ok || ta.value !== newValue) ta.value = newValue
+  // Do NOT call ta.focus() here — it steals focus mid-commit and causes
+  // blur events on contenteditable elements to fire recursively.
+  const prev = document.activeElement
+  ta.value = newValue
+  // Try to preserve undo history if the textarea is already focused
+  if (document.activeElement === ta) {
+    ta.select()
+    const ok = document.execCommand('insertText', false, newValue)
+    if (!ok || ta.value !== newValue) ta.value = newValue
+  }
 }
 
 // ── Tabs ─────────────────────────────────────────────────────────────────
@@ -425,6 +434,58 @@ function renderInlineFormatting(text) {
   return span
 }
 
+// Creates a span that:
+//  • Shows rendered inline formatting (bold/italic/etc) when idle
+//  • Switches to plain raw text on click so the user edits the markdown source
+//  • Calls onCommit(rawText) on blur, guarded against recursive firing
+function makeEditableSpan(rawText, onCommit) {
+  const span = document.createElement('span')
+  span.className = 'line-text'
+
+  function showFormatted() {
+    // Remove contenteditable entirely — don't set it to 'false'.
+    // Setting contenteditable="false" on a child of a non-editable parent
+    // causes Chromium to swallow clicks before our listener fires.
+    span.removeAttribute('contenteditable')
+    span.innerHTML = ''
+    const rendered = renderInlineFormatting(rawText)
+    while (rendered.firstChild) span.appendChild(rendered.firstChild)
+    span.style.cursor = 'text'
+  }
+
+  function showRaw() {
+    span.contentEditable = 'true'
+    span.textContent = rawText
+    span.style.cursor = 'text'
+  }
+
+  showFormatted()
+
+  span.addEventListener('click', e => {
+    e.stopPropagation()
+    if (span.contentEditable === 'true') return  // already editing
+    showRaw()
+    // Place cursor at click position — just focus, browser handles cursor
+    span.focus()
+  })
+
+  span.addEventListener('blur', () => {
+    if (_committing) return
+    if (span.contentEditable !== 'true') return  // wasn't in edit mode
+    const newRaw = span.textContent
+    rawText = newRaw
+    showFormatted()
+    onCommit(newRaw)
+  })
+
+  span.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); span.blur() }
+    if (e.key === 'Escape') { showFormatted(); e.preventDefault() }
+  })
+
+  return span
+}
+
 // ── Sidebar ────────────────────────────────────────────────────────────────
 function headingColorClass(level) {
   if (level <= 1) return 'md-h1-color'
@@ -454,14 +515,32 @@ function renderSidebar() {
 function jumpToSection(title) {
   const t = activeTab(); if (!t) return
   if (currentView === 'organised') {
-    const el = document.getElementById('sec-' + CSS.escape(title))
+    // IDs are assigned raw ('sec-' + title). getElementById takes a literal
+    // string, NOT a selector — CSS.escape here made every spaced title unfindable.
+    const el = document.getElementById('sec-' + title)
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  } else {
-    const text = t.textareaEl.value
-    const esc = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const m = new RegExp('^#+\\s*' + esc + '$', 'm').exec(text)
-    if (m) { t.textareaEl.focus(); t.textareaEl.setSelectionRange(m.index, m.index); t.textareaEl.scrollTop = text.substring(0, m.index).split('\n').length * 24 }
+    return
   }
+  // Raw view: find the heading line exactly the way parseContent sees it
+  // (same regex, same code-fence skipping), so sidebar and jump can never
+  // disagree about #tag Title vs # Title formats.
+  const lines = t.textareaEl.value.split('\n')
+  const re = t.isMd ? /^(#{1,6})\s+(.+)$/ : /^(#+)\s*(.+)$/
+  let target = -1, inCode = false
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith('```')) { inCode = !inCode; continue }
+    if (inCode) continue
+    const m = lines[i].match(re)
+    if (m && m[2].trim() === title) { target = i; break }
+  }
+  if (target === -1) return
+  const pos = lines.slice(0, target).join('\n').length + (target ? 1 : 0)
+  t.textareaEl.focus()
+  t.textareaEl.setSelectionRange(pos, pos)
+  // Scroll using the editor's REAL line-height (22px Lumina, ~23.6px old),
+  // with a 3-line lead-in so the heading isn't flush against the top edge.
+  const lh = parseFloat(getComputedStyle(t.textareaEl).lineHeight) || 22
+  t.textareaEl.scrollTop = Math.max(0, target * lh - lh * 3)
 }
 
 // ── MD inline render ───────────────────────────────────────────────────────
@@ -558,19 +637,44 @@ function renderOrganised() {
     block.style.marginLeft = (Math.max(0, (s.level || 1) - 1) * 18) + 'px'
     block.draggable = true
     const cc = t.isMd ? headingColorClass(s.level) : ''
-    const head = document.createElement('div'); head.className = 'section-head'
-    head.innerHTML = `<span class="drag-handle" title="Drag to reorder${hasChildren ? ' (brings its subsections along)' : ''}">⠿</span><span class="chevron ${isCollapsed ? '' : 'open'}">▶</span><span class="sec-title ${cc}">${escapeHtml(s.title)}</span><span class="sec-tag">${s.tag}</span>${hasChildren ? '<span class="sec-parent-badge" title="Has nested subsections">▾ group</span>' : ''}`
-    const handle = head.querySelector('.drag-handle')
-    handle.addEventListener('mousedown', () => { dragFromHandle = true })
-    head.querySelector('.chevron').addEventListener('click', e => { e.stopPropagation(); toggleSection(s.title) })
-    head.querySelector('.sec-title').addEventListener('click', e => { e.stopPropagation(); openSectionEdit(block, s) })
-    // Only toggle collapse when clicking the head background itself — not any child element
-    // that already has its own click handler. Using exact target match prevents double-fire.
-    head.addEventListener('click', e => {
-      if (e.target === head || e.target.classList.contains('sec-tag') || e.target.classList.contains('sec-parent-badge')) {
-        toggleSection(s.title)
-      }
-    })
+    const head = document.createElement('div')
+    head.className = 'section-head'
+
+    // LEFT zone: drag handle + chevron → always collapses/expands
+    const leftZone = document.createElement('div')
+    leftZone.className = 'section-head-left'
+    leftZone.innerHTML = `<span class="drag-handle" title="Drag to reorder">⠿</span><span class="chevron ${isCollapsed ? '' : 'open'}">▶</span>`
+    leftZone.querySelector('.drag-handle').addEventListener('mousedown', () => { dragFromHandle = true })
+    leftZone.addEventListener('click', e => { e.stopPropagation(); toggleSection(s.title) })
+
+    // TITLE zone: only the text → opens section edit on click
+    const titleZone = document.createElement('div')
+    titleZone.className = 'section-head-title-zone'
+    const titleSpan = document.createElement('span')
+    titleSpan.className = 'sec-title ' + cc
+    titleSpan.textContent = s.title
+    titleZone.appendChild(titleSpan)
+    titleZone.addEventListener('click', e => { e.stopPropagation(); openSectionEdit(block, s) })
+
+    // RIGHT zone: tag + optional badge → collapses/expands
+    const rightZone = document.createElement('div')
+    rightZone.className = 'section-head-right'
+    const tagSpan = document.createElement('span')
+    tagSpan.className = 'sec-tag'
+    tagSpan.textContent = s.tag
+    rightZone.appendChild(tagSpan)
+    if (hasChildren) {
+      const badge = document.createElement('span')
+      badge.className = 'sec-parent-badge'
+      badge.title = 'Has nested subsections — drag moves children too'
+      badge.textContent = '▾ group'
+      rightZone.appendChild(badge)
+    }
+    rightZone.addEventListener('click', e => { e.stopPropagation(); toggleSection(s.title) })
+
+    head.appendChild(leftZone)
+    head.appendChild(titleZone)
+    head.appendChild(rightZone)
     block.addEventListener('dragstart', e => {
       if (!dragFromHandle) { e.preventDefault(); return }
       dragSrc = block; block.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'
@@ -637,29 +741,27 @@ function buildBody(body, s, hasChildren) {
 
     const key = s.title + '::' + i, isDone = t.doneLines.has(key)
     if (line.trim() === '') { const sp = document.createElement('div'); sp.style.height = '6px'; body.appendChild(sp); i++; continue }
+
     if (line.startsWith('=> ') || line.startsWith('-> ')) {
+      const prefix = line.startsWith('=> ') ? '=> ' : '-> '
+      const rawContent = line.slice(prefix.length)
       const item = document.createElement('div'); item.className = 'line-item arrow-line'
-      const txt = renderInlineFormatting(line.replace(/^(=>|->)\s*/, ''))
-      txt.contentEditable = 'true'
-      txt.addEventListener('blur', () => commitInlineEdit(s.title, i, (line.startsWith('=> ') ? '=> ' : '-> ') + txt.innerText))
-      txt.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); txt.blur() } })
+      const txt = makeEditableSpan(rawContent, (val) => commitInlineEdit(s.title, i, prefix + val))
       item.appendChild(txt); body.appendChild(item); i++; continue
     }
+
     if (line.startsWith('- ')) {
+      const rawContent = line.slice(2)
       const item = document.createElement('div'); item.className = 'line-item' + (isDone ? ' done' : '')
       const chk = document.createElement('span'); chk.className = 'check'; chk.textContent = isDone ? '✓' : ''
       chk.onclick = e => { e.stopPropagation(); toggleDone(key) }
-      const txt = renderInlineFormatting(line.substring(2))
-      txt.contentEditable = 'true'
-      txt.addEventListener('blur', () => commitInlineEdit(s.title, i, '- ' + txt.innerText))
-      txt.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); txt.blur() } })
+      const txt = makeEditableSpan(rawContent, (val) => commitInlineEdit(s.title, i, '- ' + val))
       item.appendChild(chk); item.appendChild(txt); body.appendChild(item); i++; continue
     }
+
+    // Plain line
     const item = document.createElement('div'); item.className = 'line-item'
-    const txt = renderInlineFormatting(line)
-    txt.contentEditable = 'true'
-    txt.addEventListener('blur', () => commitInlineEdit(s.title, i, txt.innerText))
-    txt.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); txt.blur() } })
+    const txt = makeEditableSpan(line, (val) => commitInlineEdit(s.title, i, val))
     item.appendChild(txt); body.appendChild(item); i++
   }
   if (inCode) { const pre = document.createElement('div'); pre.className = 'md-code-block'; pre.textContent = codeLines.join('\n'); body.appendChild(pre) }
@@ -678,21 +780,40 @@ function openSectionEdit(block, s) {
 }
 
 function commitSectionEdit(title, newContent) {
-  const t = activeTab(); if (!t) return
-  const sections = parseContent(t.textareaEl.value, t.isMd)
-  const sec = sections.find(s => s.title === title); if (!sec) return
-  sec.lines = newContent.split('\n')
-  setEditorValue(t.textareaEl, sectionsToText(sections, t.isMd))
-  setTabModified(t, true); renderOrganised(); updateStatus()
+  if (_committing) return
+  _committing = true
+  try {
+    const t = activeTab(); if (!t) return
+    const sections = parseContent(t.textareaEl.value, t.isMd)
+    const sec = sections.find(s => s.title === title); if (!sec) return
+    sec.lines = newContent.split('\n')
+    setEditorValue(t.textareaEl, sectionsToText(sections, t.isMd))
+    setTabModified(t, true)
+    // Defer the re-render so the blur event fully completes before we
+    // destroy and rebuild the DOM (destroying mid-blur causes another blur)
+    setTimeout(() => { renderOrganised(); updateStatus() }, 0)
+  } finally {
+    setTimeout(() => { _committing = false }, 0)
+  }
 }
 
 function commitInlineEdit(title, li, newText) {
-  const t = activeTab(); if (!t) return
-  const sections = parseContent(t.textareaEl.value, t.isMd)
-  const sec = sections.find(s => s.title === title); if (!sec) return
-  sec.lines[li] = newText
-  setEditorValue(t.textareaEl, sectionsToText(sections, t.isMd))
-  setTabModified(t, true); updateStatus()
+  if (_committing) return
+  _committing = true
+  try {
+    const t = activeTab(); if (!t) return
+    const sections = parseContent(t.textareaEl.value, t.isMd)
+    const sec = sections.find(s => s.title === title); if (!sec) return
+    // Only write back if the text actually changed — avoids spurious re-renders
+    // when the user just clicked away without editing
+    if (sec.lines[li] === newText) return
+    sec.lines[li] = newText
+    setEditorValue(t.textareaEl, sectionsToText(sections, t.isMd))
+    setTabModified(t, true)
+    setTimeout(() => { updateStatus() }, 0)
+  } finally {
+    setTimeout(() => { _committing = false }, 0)
+  }
 }
 
 // ── Table builder ──────────────────────────────────────────────────────────
@@ -747,26 +868,36 @@ function closeTableBuilder() {
 
 // ── Format toolbar ─────────────────────────────────────────────────────────
 function applyFormat(type) {
-  const active = document.activeElement
-  if (!active || !active.classList.contains('line-text')) return
-  const sel = window.getSelection()
-  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return
-  const range = sel.getRangeAt(0)
-  const selectedText = range.toString(); if (!selectedText) return
+  const t = activeTab(); if (!t) return
   const wrappers = { bold: ['**', '**'], italic: ['*', '*'], underline: ['__', '__'], code: ['`', '`'] }
   const [open, close] = wrappers[type]
-  const fullText = active.innerText
-  const selStart = getTextOffset(active, range.startContainer, range.startOffset)
-  const selEnd = getTextOffset(active, range.endContainer, range.endOffset)
-  active.innerText = fullText.slice(0, selStart) + open + selectedText + close + fullText.slice(selEnd)
-  active.dispatchEvent(new Event('blur'))
-  setTimeout(() => { if (currentView === 'organised') renderOrganised() }, 50)
-}
 
-function getTextOffset(root, node, offset) {
-  let pos = 0
-  const walk = (n) => { if (n === node) { pos += offset; return true } if (n.nodeType === Node.TEXT_NODE) { pos += n.textContent.length; return false } for (const child of n.childNodes) { if (walk(child)) return true } return false }
-  walk(root); return pos
+  // ── Organised view: wrap selected text inside the active editable span ──
+  if (currentView === 'organised') {
+    const active = document.activeElement
+    if (!active || active.contentEditable !== 'true') return
+    const sel = window.getSelection()
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return
+    const selectedText = sel.getRangeAt(0).toString()
+    if (!selectedText) return
+    // Insert the wrapped text using execCommand so undo works
+    document.execCommand('insertText', false, open + selectedText + close)
+    return
+  }
+
+  // ── Raw view: wrap selected text in the textarea ──
+  const ta = t.textareaEl
+  const s = ta.selectionStart, e = ta.selectionEnd
+  if (s === e) return
+  const selected = ta.value.slice(s, e)
+  const replacement = open + selected + close
+  ta.setSelectionRange(s, e)
+  const ok = document.execCommand('insertText', false, replacement)
+  if (!ok) ta.value = ta.value.slice(0, s) + replacement + ta.value.slice(e)
+  ta.setSelectionRange(s + open.length, s + open.length + selected.length)
+  ta.focus()
+  setTabModified(t, true)
+  renderSidebar(); updateStatus()
 }
 
 // ── Done / collapse / expand ───────────────────────────────────────────────
@@ -1102,16 +1233,16 @@ function runFind() {
   }
   findIndex = findMatches.length ? 0 : -1
   updateFindStatus()
-  selectCurrentMatch()
+  selectCurrentMatch(false)
 }
 function updateFindStatus() {
   findCount.textContent = findMatches.length ? `${findIndex + 1} / ${findMatches.length}` : (findInput.value ? '0 / 0' : '')
 }
-function selectCurrentMatch() {
+function selectCurrentMatch(focusEditor = true) {
   const ed = activeEditor()
   if (!ed || findIndex === -1) return
   const m = findMatches[findIndex]
-  ed.focus()
+  if (focusEditor) ed.focus()
   ed.setSelectionRange(m.start, m.end)
   const line = ed.value.slice(0, m.start).split('\n').length
   ed.scrollTop = Math.max(0, (line - 5) * 20)

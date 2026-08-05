@@ -1,0 +1,109 @@
+/* ══════════════════════════════════════════════════════════════════
+   NOTEBOOK — sketch-paper theme for Hashtag Notepad
+   Pencil/ink linework · graphite greyscale · one ink-blue accent ·
+   paper grain · handwritten annotations (Caveat)
+
+   TEXTURES — the grain below is an embedded SVG noise (data-URI) so the
+   plugin is self-contained. Prefer the real photo texture? Copy it to
+   the app root and swap the --grain line to:
+       --grain: url('assets/paper.png');
+   (Relative url()s in plugin CSS resolve against the APP ROOT — the
+   folder containing renderer.html — not this plugin folder.)
+
+   FONTS — same rule. Point these at wherever you extracted Caveat.
+   The paths below assume <app root>/fonts/static/*.ttf (the Google
+   Fonts zip layout). No static/ subfolder? Drop "static/".            */
+
+@font-face { font-family: 'Caveat'; src: url('fonts/static/Caveat-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Caveat'; src: url('fonts/static/Caveat-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+
+/* ── Palette + sketch tokens ─────────────────────────────────────── */
+body.theme-notebook {
+  --bg: #f2efe6; --bg2: #eae6db; --bg3: #e1dccc; --bg4: #d6d0bd;
+  --border: #c6bfae; --border2: #a79e89;
+  --text: #2b2a26; --text2: #65615a; --text3: #9a948a;
+  --accent: #2f5d9e; --accent-bg: #dce6f2; --accent-text: #24507f;
+  --titlebar: #e7e2d4; --statusbar-bg: #2b2a26; --statusbar-text: #e8e4d9;
+  --done-text: #a49d8f; --check-border: #8b8474; --check-done-bg: #dce6f2;
+  --drag-handle: #b3ac9b;
+  --section-head: #ede9dc; --section-head-hover: #e6e1d1; --section-body: #f5f2e9;
+  --arrow-bg: #e3eaf3; --arrow-border: #5d82b3; --arrow-text: #2f5d9e;
+  --md-h1: #191813; --md-h2: #2e2d28; --md-h3: #45433c;
+  --md-h4: #5b584f; --md-h5: #716d62; --md-h6: #878277;
+  --md-code: #6b5a33; --md-quote: #6d675a; --md-bold: #1c1b16; --md-italic: #3f4c5e;
+  --inline-edit-border: #2f5d9e; --inline-edit-bg: #fbf9f2; --fmt-bar: #eae6d9;
+  --hatch: rgba(43,42,38,0.07);          /* crosshatch stroke */
+  --sketch-shadow: rgba(43,42,38,0.16);  /* offset "print" shadow */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Paper grain on every surface ────────────────────────────────── */
+body.theme-notebook,
+body.theme-notebook #titlebar,
+body.theme-notebook #tabbar,
+body.theme-notebook #toolbar,
+body.theme-notebook #fmt-toolbar,
+body.theme-notebook #find-bar,
+body.theme-notebook #sidebar,
+body.theme-notebook .section-head,
+body.theme-notebook #organised-view,
+body.theme-notebook .raw-editor,
+body.theme-notebook #save-dialog-box,
+body.theme-notebook #table-builder-box,
+body.theme-notebook .dropdown-menu { background-image: var(--grain); }
+body.theme-notebook .raw-editor { background-attachment: local; } /* grain scrolls with your text */
+
+/* ── Handwritten annotation surfaces ─────────────────────────────── */
+body.theme-notebook #app-name,
+body.theme-notebook .sec-title,
+body.theme-notebook .sec-tag,
+body.theme-notebook #sidebar-title,
+body.theme-notebook .empty-section,
+body.theme-notebook .fmt-hint,
+body.theme-notebook #start-page-title,
+body.theme-notebook #start-page-hint,
+body.theme-notebook #start-page-recent-title,
+body.theme-notebook #drop-label,
+body.theme-notebook #zen-hint,
+body.theme-notebook .bullet-dot,
+body.theme-notebook .check { font-family: 'Caveat', 'Segoe Print', 'Bradley Hand', cursive; }
+
+body.theme-notebook #app-name { font-size: 16px; font-weight: 700; }
+body.theme-notebook #sidebar-title { font-size: 15px; font-weight: 700; text-transform: none; letter-spacing: normal; }
+body.theme-notebook .sec-title { font-size: 16px; font-weight: 700; }
+body.theme-notebook .sec-tag { font-size: 12.5px; }
+body.theme-notebook .empty-section { font-size: 15px; font-style: normal; }
+body.theme-notebook .fmt-hint { font-size: 14px; }
+body.theme-notebook #start-page-title { font-size: 34px; font-weight: 700; }
+body.theme-notebook #start-page-hint { font-size: 16px; }
+body.theme-notebook #start-page-recent-title { font-size: 15px; text-transform: none; letter-spacing: normal; }
+body.theme-notebook #drop-label { font-size: 26px; font-weight: 700; }
+body.theme-notebook #zen-hint { font-size: 16px; }
+body.theme-notebook #zen-hint kbd { font-family: 'Segoe UI', system-ui, sans-serif; }
+body.theme-notebook .bullet-dot { font-size: 15px; }
+body.theme-notebook .check { font-size: 12px; font-weight: 700; border-width: 1.5px; border-radius: 3px 4px 3px 5px; color: var(--accent-text); }
+
+/* ── Restrained sketch geometry: uneven radii, dashed rules,
+      crosshatch fills, offset print shadows ──────────────────────── */
+body.theme-notebook .tab { border-radius: 5px 6px 0 0; }
+body.theme-notebook .tb-btn { border-radius: 3px 4px 3px 5px; }
+body.theme-notebook #view-switcher { border-radius: 4px 6px 5px 4px; }
+body.theme-notebook .fmt-btn,
+body.theme-notebook .find-btn { border-radius: 3px 4px 3px 4px; }
+body.theme-notebook .view-btn.active,
+body.theme-notebook .line-item.done .check,
+body.theme-notebook .md-table th {
+  background-image: repeating-linear-gradient(45deg, transparent 0 4px, var(--hatch) 4px 5px);
+}
+body.theme-notebook #sidebar-header { border-bottom: 1px dashed var(--border); }
+body.theme-notebook .section-body { border-top: 1px dashed var(--border); }
+body.theme-notebook .md-hr { border-top: 1px dashed var(--border2); }
+body.theme-notebook .section-block { border-radius: 3px 5px 4px 6px; box-shadow: 1.5px 1.5px 0 var(--sketch-shadow); }
+body.theme-notebook #save-dialog-box,
+body.theme-notebook #table-builder-box { border-radius: 3px 7px 4px 6px; box-shadow: 2px 2px 0 var(--sketch-shadow); }
+body.theme-notebook .dropdown-menu { border-radius: 3px 6px 4px 6px; box-shadow: 2px 2px 0 var(--sketch-shadow); }
+body.theme-notebook ::selection { background: var(--accent-bg); }
+
+/* Theme is light — match the toggle icon to what light themes show */
+body.theme-notebook #icon-sun { display: none !important; }
+body.theme-notebook #icon-moon { display: block !important; }
