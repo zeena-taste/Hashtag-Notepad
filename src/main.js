@@ -38,7 +38,7 @@ function createWindow(filePath = null, content = null) {
   win.setIcon(iconPath)
   win._isModified = false
   windows.add(win)
-  win.loadFile('renderer.html')
+  win.loadFile('src/renderer.html')
 
   win.webContents.once('did-finish-load', () => {
     win.webContents.send('system-theme', nativeTheme.shouldUseDarkColors ? 'dark' : 'light')

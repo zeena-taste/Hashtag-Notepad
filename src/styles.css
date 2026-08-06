@@ -493,10 +493,24 @@ body.theme-light #btn-close-win:hover { background: #ba1a1a !important; color: #
 .dropdown-sep { height: 1px; background: var(--border); margin: 4px 2px; }
 
 /* ── Zen mode ── */
-body.zen #tabbar, body.zen #toolbar, body.zen #sidebar,
+/* Hide all chrome EXCEPT the tabbar (which we need for window dragging) */
+body.zen #toolbar, body.zen #sidebar,
 body.zen #statusbar, body.zen #fmt-toolbar, body.zen #find-bar { display: none !important; }
+
+/* Make the tabbar invisible and hide the tabs/buttons, leaving only the drag region + window controls */
+body.zen #tabbar {
+  background: transparent;
+  border-bottom: none;
+}
+body.zen #tabbar-identity,
+body.zen #tab-list,
+body.zen #tab-new {
+  display: none !important;
+}
+
 body.zen #organised-view { max-width: 760px; margin: 0 auto; }
 body.zen #zen-hint { display: flex; }
+
 #zen-hint {
   display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
   background: rgba(0,0,0,0.55); color: rgba(255,255,255,0.7);
