@@ -9,60 +9,81 @@ This document is a full reference for anyone building a theme plugin that goes b
 ```
 hashtag-notepad/
 │
-├── main.js              Electron main process. Manages windows, file I/O,
-│                        IPC handlers, preferences, and plugin discovery.
-│                        Does not touch the UI directly.
+├── src/                     All application source code.
+│   ├── main.js              Electron main process. Manages windows, file I/O,
+│   │                        IPC handlers, preferences, and plugin discovery.
+│   │                        Does not touch the UI directly.
+│   │
+│   ├── renderer.html        The single HTML page. All UI structure is here —
+│   │                        every div, button, and layer. Nothing is injected
+│   │                        by JS at page load except dynamic content (tabs,
+│   │                        section blocks, sidebar links).
+│   │
+│   ├── renderer.js          All UI logic. Tab management, file ops, the
+│   │                        organised/raw view renderers, find & replace,
+│   │                        drag-reorder, inline editing, export, zen mode.
+│   │
+│   ├── styles.css           All styling. One flat file, no preprocessor.
+│   │                        Structured in sections matching the DOM order.
+│   │                        This is the primary file a theme plugin replaces
+│   │                        or extends.
+│   │
+│   ├── store.js             Tiny JSON prefs store (no npm dependency).
+│   │                        Saves: theme id, window bounds, recent files.
+│   │                        Written to the OS userData folder at runtime,
+│   │                        not the project directory.
+│   │
+│   └── plugins.js           Discovers theme plugins from plugins/ (bundled)
+│                            and the user's userData/plugins/ folder.
+│                            Loads plugin CSS and passes it to the renderer.
 │
-├── renderer.html        The single HTML page. All UI structure is here —
-│                        every div, button, and layer. Nothing is injected
-│                        by JS at page load except dynamic content (tabs,
-│                        section blocks, sidebar links).
+├── assets/                  Static files used by the build.
+│   ├── icon.ico             Windows icon (multi-resolution .ico).
+│   └── icon.png             512×512 PNG icon used for macOS and Linux builds.
 │
-├── renderer.js          All UI logic. Tab management, file ops, the
-│                        organised/raw view renderers, find & replace,
-│                        drag-reorder, inline editing, export, zen mode.
-│
-├── styles.css           All styling. One flat file, no preprocessor.
-│                        Structured in sections matching the DOM order.
-│                        This is the primary file a theme plugin replaces
-│                        or extends.
-│
-├── store.js             Tiny JSON prefs store (no npm dependency).
-│                        Saves: theme id, window bounds, recent files.
-│                        Lives in the OS userData folder, not the project.
-│
-├── plugins.js           Discovers theme plugins from plugins/ (bundled)
-│                        and the user's userData/plugins/ folder.
-│                        Loads plugin CSS and passes it to the renderer.
-│
-├── plugins/             Bundled sample themes. Each subfolder is one plugin.
+├── plugins/                 Bundled sample themes. Each subfolder is one plugin.
 │   ├── nord/
-│   │   ├── plugin.json  { id, name, type: "theme", css: "theme.css" }
-│   │   └── theme.css    body.theme-nord { --bg: ...; ... }
+│   │   ├── plugin.json      { id, name, type: "theme", css: "theme.css" }
+│   │   └── theme.css        body.theme-nord { --bg: ...; ... }
 │   └── solarized-dark/
 │       ├── plugin.json
 │       └── theme.css
 │
-├── build/
-│   └── icon.png         512px PNG icon used for macOS and Linux builds.
+├── docs/                    All documentation except README and LICENSE.
+│   ├── ARCHITECTURE.md      This file.
+│   ├── PLUGINS.md           Guide for writing theme plugins.
+│   ├── CONTRIBUTING.md      Dev setup, project layout, PR expectations.
+│   ├── CHANGELOG.md         Version history.
+│   └── CODE_OF_CONDUCT.md
 │
-├── icon.ico             Windows icon (multi-resolution .ico).
-│
-├── .github/
+├── .github/                 GitHub-specific config (must stay at root).
 │   ├── workflows/
-│   │   ├── ci.yml       Runs on every push/PR — syntax check + unpacked build.
-│   │   └── release.yml  Runs on version tags — builds Win/Mac/Linux installers.
-│   ├── ISSUE_TEMPLATE/  Bug report and feature request forms.
+│   │   ├── ci.yml           Runs on every push/PR to main —
+│   │   │                    syntax check + unpacked Linux build.
+│   │   └── release.yml      Runs on version tags (e.g. v3.1.0) —
+│   │                        builds Win/Mac/Linux installers and creates
+│   │                        a GitHub Release with all three attached.
+│   ├── ISSUE_TEMPLATE/      Bug report and feature request forms.
 │   └── PULL_REQUEST_TEMPLATE.md
 │
-├── package.json         Electron + electron-builder config. Build scripts,
-│                        file lists for each platform target.
-├── PLUGINS.md           Guide for writing theme plugins.
-├── CONTRIBUTING.md      Dev setup, project layout, PR expectations.
-├── CHANGELOG.md         Version history.
-├── LICENSE              MIT.
-└── README.md            User-facing docs.
+├── README.md                User-facing docs. Must stay at root —
+│                            GitHub renders it as the repo homepage.
+├── LICENSE                  MIT. Must stay at root — GitHub badge requires it.
+├── .gitignore
+└── package.json             Electron + electron-builder config. Build scripts,
+                             file include lists, per-platform icon paths.
 ```
+
+### Path references to keep in sync
+
+Moving files between these folders requires updating three places:
+
+| What moved | Where to update |
+|---|---|
+| `src/` files | `package.json` → `"files"` array |
+| `assets/icon.ico` / `assets/icon.png` | `package.json` → `win.icon`, `mac.icon`, `linux.icon` |
+| `assets/icon.ico` | `src/main.js` → `const iconPath = path.join(__dirname, '..', 'assets', 'icon.ico')` |
+| `docs/` files | Any cross-links inside the markdown files themselves |
 
 ---
 

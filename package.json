@@ -28,7 +28,7 @@
         { "target": "nsis", "arch": ["x64"] },
         { "target": "portable", "arch": ["x64"] }
       ],
-      "icon": "./icon.ico",
+      "icon": "./assets/icon.ico",
       "executableName": "HashtagNotepad",
       "requestedExecutionLevel": "asInvoker",
       "verifyUpdateCodeSignature": false,
@@ -42,15 +42,15 @@
       "shortcutName": "Hashtag Notepad",
       "uninstallDisplayName": "Hashtag Notepad",
       "deleteAppDataOnUninstall": false,
-      "installerIcon": "./icon.ico",
-      "uninstallerIcon": "./icon.ico"
+      "installerIcon": "./assets/icon.ico",
+      "uninstallerIcon": "./assets/icon.ico"
     },
     "mac": {
       "target": [
         { "target": "dmg", "arch": ["x64", "arm64"] },
         { "target": "zip", "arch": ["x64", "arm64"] }
       ],
-      "icon": "./build/icon.png",
+      "icon": "./assets/icon.png",
       "category": "public.app-category.productivity",
       "identity": null,
       "hardenedRuntime": false,
@@ -61,7 +61,7 @@
         { "target": "AppImage", "arch": ["x64"] },
         { "target": "deb", "arch": ["x64"] }
       ],
-      "icon": "./build/icon.png",
+      "icon": "./assets/icon.png",
       "category": "Utility",
       "executableName": "hashtag-notepad",
       "synopsis": "A lightweight notepad with collapsible #hashtag sections"
@@ -72,26 +72,21 @@
         "name": "Text Document",
         "description": "Hashtag Notepad Document",
         "role": "Editor",
-        "icon": "./icon.ico"
+        "icon": "./assets/icon.ico"
       },
       {
         "ext": "md",
         "name": "Markdown Document",
         "description": "Hashtag Notepad Document",
         "role": "Editor",
-        "icon": "./icon.ico"
+        "icon": "./assets/icon.ico"
       }
     ],
     "files": [
-      "main.js",
-      "store.js",
-      "plugins.js",
-      "renderer.html",
-      "renderer.js",
-      "styles.css",
-      "icon.ico",
-      "package.json",
-      "plugins/**/*"
+      "src/**/*",
+      "plugins/**/*",
+      "assets/icon.ico",
+      "package.json"
     ]
   },
   "devDependencies": {
