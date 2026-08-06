@@ -1,0 +1,15 @@
+# Normalize line endings to LF on commit, checkout as LF on all platforms
+* text=auto eol=lf
+
+# Windows-only files keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files — no line ending conversion
+*.ico binary
+*.png binary
+*.exe binary
+*.dmg binary
+*.AppImage binary
+*.deb binary
+*.7z binary
