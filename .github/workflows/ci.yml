@@ -25,10 +25,10 @@ jobs:
 
       - name: Syntax check
         run: |
-          node --check main.js
-          node --check renderer.js
-          node --check store.js
-          node --check plugins.js
+          node --check src/main.js
+          node --check src/renderer.js
+          node --check src/store.js
+          node --check src/plugins.js
 
       - name: Unpacked build (no installer, just checks packaging works)
         run: npx electron-builder --linux dir

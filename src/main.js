@@ -7,9 +7,9 @@ const { discoverThemePlugins } = require('./plugins')
 
 app.setAppUserModelId('com.hashtagnotepad.app')
 
-const iconPath = path.join(__dirname, 'assets', 'icon.ico')
+const iconPath = path.join(__dirname, '..', 'assets', 'icon.ico')
 const windows = new Set()
-const bundledPluginsDir = path.join(__dirname, 'plugins')
+const bundledPluginsDir = path.join(__dirname, '..', 'plugins')
 
 function userPluginsDir() {
   return path.join(app.getPath('userData'), 'plugins')
