@@ -4,9 +4,7 @@
 #   git tag v3.0.0
 #   git push origin v3.0.0
 #
-# That's it — this workflow does the rest. Each OS's build step can only run
-# on that OS (Apple's tooling requires a real Mac for the .dmg, for instance),
-# which is exactly why this uses a 3-runner matrix instead of one machine.
+# That's it — this workflow does the rest.
 name: Release
 
 on:
@@ -15,12 +13,12 @@ on:
       - 'v*'
 
 permissions:
-  contents: write   # needed so the release job can create a Release and upload files
+  contents: write
 
 jobs:
   build:
     strategy:
-      fail-fast: false   # if the mac build fails, still let win/linux finish
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
@@ -40,13 +38,35 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # Mac only: electron-builder needs a .icns file for the app icon.
+      # macOS ships with sips + iconutil so we generate it from our PNG here.
+      - name: Generate .icns icon (macOS only)
+        if: matrix.os == 'macos-latest'
+        run: |
+          mkdir -p assets/icon.iconset
+          sips -z 16 16     assets/icon.png --out assets/icon.iconset/icon_16x16.png
+          sips -z 32 32     assets/icon.png --out assets/icon.iconset/icon_16x16@2x.png
+          sips -z 32 32     assets/icon.png --out assets/icon.iconset/icon_32x32.png
+          sips -z 64 64     assets/icon.png --out assets/icon.iconset/icon_32x32@2x.png
+          sips -z 128 128   assets/icon.png --out assets/icon.iconset/icon_128x128.png
+          sips -z 256 256   assets/icon.png --out assets/icon.iconset/icon_128x128@2x.png
+          sips -z 256 256   assets/icon.png --out assets/icon.iconset/icon_256x256.png
+          iconutil -c icns assets/icon.iconset -o assets/icon.icns
+
+      # Linux only: .deb packaging needs fpm
+      - name: Install fpm (Linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get install -y ruby ruby-dev
+          sudo gem install fpm
+
       - name: Build
         run: ${{ matrix.build_cmd }}
         env:
-          # Skip electron-builder's automatic code-signing lookup — we don't
-          # have a paid Apple/Windows signing certificate, and without this
-          # electron-builder can fail trying to find one that doesn't exist.
           CSC_IDENTITY_AUTO_DISCOVERY: false
+          # Provide token so electron-builder doesn't complain about publishing
+          # (actual publishing is handled by the release job below, not here)
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
