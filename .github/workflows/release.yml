@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      # Mac only: generate .icns in /tmp so it never collides with packaged assets
+      # Mac only: generate .icns and place it where electron-builder expects it
       - name: Generate .icns icon (macOS only)
         if: matrix.os == 'macos-latest'
         run: |
@@ -43,7 +43,7 @@ jobs:
           sips -z 128 128   assets/icon.png --out /tmp/icon.iconset/icon_128x128.png
           sips -z 256 256   assets/icon.png --out /tmp/icon.iconset/icon_128x128@2x.png
           sips -z 256 256   assets/icon.png --out /tmp/icon.iconset/icon_256x256.png
-          iconutil -c icns /tmp/icon.iconset -o /tmp/icon.icns
+          iconutil -c icns /tmp/icon.iconset -o assets/icon.icns
 
       # Linux only: .deb packaging requires fpm
       - name: Install fpm (Linux only)
