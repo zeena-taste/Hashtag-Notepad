@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/<you>/hashtag-notepad.git"
+    "url": "https://github.com/zeena-taste/Hashtag-Notepad.git"
   },
   "main": "main.js",
   "scripts": {
