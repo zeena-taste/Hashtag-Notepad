@@ -57,3 +57,83 @@ A user-installed plugin with the same `id` as a bundled one overrides it, so you
 ## What's not supported (yet)
 
 This is intentionally CSS-only for now — no JS panels, no custom commands, no new file-format support. If the project grows a community around it, a richer plugin API (with proper permissions/sandboxing) would be the natural next step, but that's a bigger undertaking than a first version should take on.
+
+## 10-minute walkthrough: build your first theme
+
+This is a copy-paste path from zero to a theme you can load and PR.
+
+### 1. Copy a sample
+
+From the repo root:
+
+```bash
+cp -R plugins/nord plugins/ocean-breeze
+```
+
+### 2. Rename the plugin identity
+
+Edit `plugins/ocean-breeze/plugin.json`:
+
+```json
+{
+  "id": "ocean-breeze",
+  "name": "Ocean Breeze",
+  "type": "theme",
+  "css": "theme.css",
+  "author": "your-github-handle"
+}
+```
+
+The `id` must be unique and must match the CSS selector in the next step.
+
+### 3. Retarget the CSS selector
+
+Open `plugins/ocean-breeze/theme.css`. Change only the selector first:
+
+```css
+/* was: body.theme-nord { ... } */
+body.theme-ocean-breeze {
+  /* keep the variables; tweak hex values next */
+}
+```
+
+### 4. Change a few colors you can see immediately
+
+Pick high-signal tokens so you know the theme loaded:
+
+| Variable | What it paints |
+|----------|----------------|
+| `--bg` | Main editor background |
+| `--text` | Primary text |
+| `--accent` | Selection / focus accents |
+| `--titlebar` | Window chrome bar |
+| `--statusbar-bg` / `--statusbar-text` | Status bar |
+
+Example starter palette (edit freely):
+
+```css
+body.theme-ocean-breeze {
+  --bg: #0b1e2d; --bg2: #123047; --bg3: #1a3d58; --bg4: #24506e;
+  --border: #2a5574; --border2: #35688a;
+  --text: #e8f1f8; --text2: #9db7c9; --text3: #6d8aa0;
+  --accent: #3dbbdb; --accent-bg: #16394a; --accent-text: #8fd9ec;
+  --titlebar: #081624; --statusbar-bg: #1f6f8b; --statusbar-text: #e8f1f8;
+  /* leave the rest from Nord until you want to fine-tune */
+}
+```
+
+### 5. Run the app and switch themes
+
+```bash
+npm install
+npm start
+```
+
+Open **Preferences / theme list** (or the theme picker in the UI) and choose **Ocean Breeze**. If the chrome and background shift to your blues, the plugin was discovered correctly.
+
+### 6. Ship it
+
+- For everyone: leave the folder under `plugins/` and open a PR.
+- For only your machine: copy the folder into the user plugins path listed above.
+
+For deeper layout/DOM constraints beyond colors, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
