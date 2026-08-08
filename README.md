@@ -92,6 +92,12 @@ plain text line
 | Ctrl+Shift+Z | Zen mode |
 | Ctrl+B / Ctrl+I / Ctrl+U | Bold / Italic / Underline (Organised view, text selected) |
 
+## Contributors
+
+<a href="https://github.com/zeena-taste/hashtag-notepad/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=zeena-taste/hashtag-notepad" alt="Contributors" />
+</a>
+
 ## Contributing
 
 This is an open-source, learning-by-doing project — issues and PRs are welcome. See `PLUGINS.md` if you want to contribute a color theme without touching the app's source at all.
