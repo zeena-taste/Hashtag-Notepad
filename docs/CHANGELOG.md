@@ -1,5 +1,12 @@
 # Changelog
 
+## v3.1.0
+- URLs (https://, http://, www.) render as clickable links in organised view
+- Markdown links [label](url) render with the label as the link text
+- Ctrl+Click opens URLs in raw view
+- Links revert to plain text when editing a line, restore on blur
+- Works in both .txt and .md files
+
 ## v3.0.0
 
 **Fixed**

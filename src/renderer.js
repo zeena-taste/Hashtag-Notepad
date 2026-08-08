@@ -65,16 +65,11 @@ let _committing = false
 // stack intact. execCommand is deprecated but Electron ships a fixed,
 // known Chromium version so it's safe to rely on here.
 function setEditorValue(ta, newValue) {
-  // Do NOT call ta.focus() here — it steals focus mid-commit and causes
-  // blur events on contenteditable elements to fire recursively.
-  const prev = document.activeElement
-  ta.value = newValue
-  // Try to preserve undo history if the textarea is already focused
   if (document.activeElement === ta) {
     ta.select()
-    const ok = document.execCommand('insertText', false, newValue)
-    if (!ok || ta.value !== newValue) ta.value = newValue
+    if (document.execCommand('insertText', false, newValue) && ta.value === newValue) return
   }
+  ta.value = newValue
 }
 
 // ── Tabs ─────────────────────────────────────────────────────────────────
@@ -995,7 +990,6 @@ async function saveFile() {
     setTabModified(t, false)
     updateTabLabel(t)
     updateFileLabel(r)
-    emitPluginEvent('file-save', { filePath: r, content: t.textareaEl.value, isMd: t.isMd })
   }
 }
 
@@ -1044,8 +1038,6 @@ function loadFileIntoTab(tab, rawContent, filePath) {
     refreshStartPage()
     if (currentView === 'organised') renderOrganised()
   }
-  // Notify plugins a file was opened
-  emitPluginEvent('file-open', { filePath, content, isMd: tab.isMd })
 }
 
 function updateFileLabel(fp) {
@@ -1390,172 +1382,12 @@ ipc.on('open-file-external', (_, d) => loadIntoTabSmart(d.content, d.filePath))
 ipc.on('check-save-before-close', () => requestCloseWindow())
 
 // ── Init ───────────────────────────────────────────────────────────────────
-// ── Plugin runtime ────────────────────────────────────────────────────────
-// The appBridge is the only way plugins can touch the editor — they never
-// get direct DOM access. We build it fresh here so it always reads current
-// state via closures rather than stale snapshots.
-const { makeRendererAPI } = require('./plugin-api')
-
-const _loadedPlugins = []   // { id, api } for each running plugin
-const _pluginCommands = []  // { id, label, run, icon, pluginId }
-const _pluginPanels   = []  // { id, el } for panels added to the layout
-
-function buildAppBridge() {
-  return {
-    getContent:    () => activeTab()?.textareaEl.value ?? '',
-    getFilePath:   () => activeTab()?.filePath ?? null,
-    isMd:          () => activeTab()?.isMd ?? false,
-    getSections:   () => {
-      const t = activeTab(); if (!t) return []
-      return parseContent(t.textareaEl.value, t.isMd)
-    },
-
-    setContent: (text) => {
-      const t = activeTab(); if (!t) return
-      setEditorValue(t.textareaEl, text)
-      setTabModified(t, true)
-      renderSidebar(); updateStatus()
-      if (currentView === 'organised') renderOrganised()
-    },
-
-    insertText: (text) => {
-      const t = activeTab(); if (!t) return
-      const ta = t.textareaEl
-      const pos = ta.selectionStart
-      const before = ta.value.slice(0, pos)
-      const after  = ta.value.slice(ta.selectionEnd)
-      ta.value = before + text + after
-      ta.setSelectionRange(pos + text.length, pos + text.length)
-      setTabModified(t, true); renderSidebar(); updateStatus()
-    },
-
-    setSection: (title, lines) => {
-      const t = activeTab(); if (!t) return
-      const sections = parseContent(t.textareaEl.value, t.isMd)
-      const sec = sections.find(s => s.title === title); if (!sec) return
-      sec.lines = lines
-      setEditorValue(t.textareaEl, sectionsToText(sections, t.isMd))
-      setTabModified(t, true); renderSidebar(); updateStatus()
-      if (currentView === 'organised') renderOrganised()
-    },
-
-    appendSection: (title, lines, tag = '#') => {
-      const t = activeTab(); if (!t) return
-      const sections = parseContent(t.textareaEl.value, t.isMd)
-      sections.push({ tag, title, level: tag.length, lines })
-      setEditorValue(t.textareaEl, sectionsToText(sections, t.isMd))
-      setTabModified(t, true); renderSidebar(); updateStatus()
-      if (currentView === 'organised') renderOrganised()
-    },
-
-    notify: (message, type = 'info') => showPluginToast(message, type),
-    confirm: (message) => window.confirm(message),
-    prompt:  (message, def = '') => window.prompt(message, def),
-
-    addPanel: (pluginId, html, position = 'bottom') => {
-      const el = document.createElement('div')
-      el.className = 'plugin-panel'
-      el.dataset.pluginId = pluginId
-      el.innerHTML = html
-      if (position === 'bottom') {
-        document.getElementById('statusbar').before(el)
-      } else {
-        document.getElementById('find-bar').after(el)
-      }
-      const entry = { id: pluginId, el }
-      _pluginPanels.push(entry)
-      return {
-        update: (newHtml) => { el.innerHTML = newHtml },
-        remove: () => { el.remove(); const i = _pluginPanels.indexOf(entry); if (i > -1) _pluginPanels.splice(i, 1) }
-      }
-    },
-
-    registerCommand: (cmd) => {
-      _pluginCommands.push(cmd)
-    },
-
-    addToolbarButton: ({ label, icon, title, onClick, pluginId }) => {
-      const btn = document.createElement('button')
-      btn.className = 'tb-btn plugin-tb-btn'
-      btn.title = title || label
-      btn.dataset.pluginId = pluginId
-      if (icon) btn.innerHTML = icon + ' ' + (label || '')
-      else btn.textContent = label || ''
-      btn.addEventListener('click', onClick)
-      document.getElementById('toolbar-right').prepend(btn)
-      return { remove: () => btn.remove() }
-    },
-  }
-}
-
-function showPluginToast(message, type = 'info') {
-  const toast = document.createElement('div')
-  toast.className = 'plugin-toast plugin-toast-' + type
-  toast.textContent = message
-  document.body.appendChild(toast)
-  setTimeout(() => toast.classList.add('plugin-toast-show'), 10)
-  setTimeout(() => {
-    toast.classList.remove('plugin-toast-show')
-    setTimeout(() => toast.remove(), 300)
-  }, 3000)
-}
-
-async function loadJsPlugins() {
-  let plugins = []
-  try { plugins = await ipc.invoke('plugin-api:discover') } catch { return }
-
-  const bridge = buildAppBridge()
-
-  for (const p of plugins) {
-    try {
-      // Execute plugin code in a sandboxed function — plugin receives only
-      // the api object, no globals, no require, no DOM references
-      const factory = new Function('module', 'exports', p.code + '\nreturn module.exports')
-      const mod = { exports: {} }
-      factory(mod, mod.exports)
-      const entry = typeof mod.exports === 'function' ? mod.exports : mod.exports.default
-      if (typeof entry !== 'function') {
-        console.warn(`[plugin-api] plugin "${p.id}" does not export a function, skipping`)
-        continue
-      }
-      const api = makeRendererAPI(p.id, ipc, bridge)
-      entry(api)
-      _loadedPlugins.push({ id: p.id, api })
-    } catch (e) {
-      console.error(`[plugin-api] failed to start plugin "${p.id}":`, e)
-    }
-  }
-}
-
-// Fire a lifecycle event into all loaded plugins
-function emitPluginEvent(event, data) {
-  _loadedPlugins.forEach(({ api }) => {
-    try { api._emit(event, data) } catch (e) { console.error('[plugin-api] event emit error', e) }
-  })
-}
-
-// Hook into existing file ops so plugins get lifecycle events automatically.
-// We patch these after the functions are defined but before init() runs.
-const _origLoadFileIntoTab = loadFileIntoTab
-// Debounce onChange so it doesn't fire on every keystroke
-let _changeDebounceTimer = null
-function _scheduleChangeEvent() {
-  clearTimeout(_changeDebounceTimer)
-  _changeDebounceTimer = setTimeout(() => {
-    emitPluginEvent('change', {
-      content:  activeTab()?.textareaEl.value ?? '',
-      filePath: activeTab()?.filePath ?? null,
-    })
-  }, 300)
-}
-
 async function init() {
   try {
     const prefs = await ipc.invoke('get-prefs')
     currentThemeId = prefs.theme
     recentFilesCache = prefs.recentFiles || []
   } catch { /* prefs unavailable, fall back to defaults */ }
-
   try {
     pluginThemes = await ipc.invoke('get-theme-plugins')
     if (pluginThemes.length) {
@@ -1564,14 +1396,13 @@ async function init() {
       style.textContent = pluginThemes.map(p => p.css).join('\n\n')
       document.head.appendChild(style)
     }
-  } catch { pluginThemes = [] }
-
+  } catch (e) {
+    console.error('[hashtag-notepad] failed to load theme plugins:', e)
+    pluginThemes = []
+  }
   applyTheme(effectiveTheme())
   newTab()
   updateStatus()
   refreshStartPage()
-
-  // Load JS plugins last so the editor is ready when they call api methods
-  await loadJsPlugins()
 }
 init()
