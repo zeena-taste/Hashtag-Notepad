@@ -1,0 +1,208 @@
+/* ══════════════════════════════════════════════════════════════════
+   SKEUOMORPH — the app as a physical desktop device.
+   Warm plastic body, keycap buttons with real travel, recessed wells,
+   teal LEDs, orange accent keys, amber LCD raw editor, corner screws,
+   speaker grilles. Depth comes from gradients + inset shadows, the way
+   real hardware catches light: bright top edge, dark bottom groove.  */
+
+body.theme-skeuo {
+  --bg: #cfccc6; --bg2: #dddad4; --bg3: #c8c5bf; --bg4: #b8b5af;
+  --border: #a9a6a0; --border2: #8d8a84;
+  --text: #2b2926; --text2: #55524c; --text3: #8a8781;
+  --accent: #d9541e; --accent-bg: #d9541e; --accent-text: #fff8f2;
+  --titlebar: #dddad4; --statusbar-bg: #2a2825; --statusbar-text: #cfccc6;
+  --done-text: #9b9892; --check-border: #8d8a84; --check-done-bg: #0f2e2a;
+  --drag-handle: #8a8781;
+  --section-head: #e6e4df; --section-head-hover: #dedbd6; --section-body: #efedea;
+  --arrow-bg: #f4e3d3; --arrow-border: #d9541e; --arrow-text: #a63f12;
+  --md-h1: #d9541e; --md-h2: #33312e; --md-h3: #4c4a45;
+  --md-h4: #63615c; --md-h5: #7a7873; --md-h6: #918f8a;
+  --md-code: #a63f12; --md-quote: #6f6c66; --md-bold: #1c1a17; --md-italic: #4c4a45;
+  --inline-edit-border: #d9541e; --inline-edit-bg: #f7f5f1; --fmt-bar: #dddad4;
+  --sidebar-w: 210px;
+  /* hardware recipes */
+  --plastic: linear-gradient(#f2f0eb, #d8d5cf);
+  --key-cream: linear-gradient(#f7f5f0, #d9d6cf);
+  --key-dark: linear-gradient(#5a5854, #3f3d3a);
+  --key-orange: linear-gradient(#f0703a, #d9541e 55%, #c74b16);
+  --key-up: inset 0 1px 0 rgba(255,255,255,0.8), inset 0 -1px 0 rgba(0,0,0,0.12), 0 2px 0 #9b9892, 0 3px 5px rgba(0,0,0,0.25);
+  --key-down: inset 0 2px 5px rgba(0,0,0,0.35);
+  --well: inset 0 2px 5px rgba(0,0,0,0.3), inset 0 -1px 0 rgba(255,255,255,0.5);
+  --screws:
+    radial-gradient(circle at 12px 12px, #c9c6c0 0 2.5px, #8d8a84 3px 4px, transparent 4.5px),
+    radial-gradient(circle at calc(100% - 12px) 12px, #c9c6c0 0 2.5px, #8d8a84 3px 4px, transparent 4.5px),
+    radial-gradient(circle at 12px calc(100% - 12px), #c9c6c0 0 2.5px, #8d8a84 3px 4px, transparent 4.5px),
+    radial-gradient(circle at calc(100% - 12px) calc(100% - 12px), #c9c6c0 0 2.5px, #8d8a84 3px 4px, transparent 4.5px);
+}
+
+/* Plastic body grain */
+body.theme-skeuo {
+  background-color: #cfccc6;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.35), transparent 120px),
+    repeating-linear-gradient(45deg, rgba(0,0,0,0.012) 0 2px, transparent 2px 4px);
+}
+
+/* ── Chrome: grooved plastic strips ── */
+body.theme-skeuo #tabbar,
+body.theme-skeuo #toolbar,
+body.theme-skeuo #fmt-toolbar,
+body.theme-skeuo #find-bar {
+  background: linear-gradient(#e6e4df, #d3d0ca);
+  border-top: 1px solid rgba(255,255,255,0.7);
+  border-bottom: 1px solid #9b9892;
+}
+body.theme-skeuo #app-name {
+  color: #55524c; font-weight: 700; letter-spacing: 0.04em;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.8);   /* engraved */
+}
+/* model number, like the calculator's "903" plate */
+body.theme-skeuo #tabbar-identity::after {
+  content: 'HN-903'; font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+  color: #8a8781; background: #c8c5bf; padding: 1px 6px; border-radius: 3px;
+  box-shadow: var(--well); margin-left: 4px;
+}
+
+/* ── Keycap buttons with real travel ── */
+body.theme-skeuo .tb-btn,
+body.theme-skeuo .fmt-btn,
+body.theme-skeuo .find-btn,
+body.theme-skeuo #theme-toggle {
+  background: var(--key-cream); border: 1px solid #9b9892; border-radius: 6px;
+  box-shadow: var(--key-up); color: #3a3835; font-weight: 600;
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+body.theme-skeuo .tb-btn:hover,
+body.theme-skeuo .fmt-btn:hover,
+body.theme-skeuo .find-btn:hover { background: linear-gradient(#ffffff, #e2dfd8); color: #2b2926; }
+body.theme-skeuo .tb-btn:active,
+body.theme-skeuo .fmt-btn:active,
+body.theme-skeuo .find-btn:active { transform: translateY(2px); box-shadow: var(--key-down); }
+/* theme toggle = a knob */
+body.theme-skeuo #theme-toggle {
+  border-radius: 50%; background: radial-gradient(circle at 35% 30%, #f7f5f0, #c9c6c0 60%, #a9a6a0);
+  box-shadow: var(--key-up);
+}
+/* + button = round orange record key */
+body.theme-skeuo #tab-new {
+  border-radius: 50%; background: var(--key-orange); border: 1px solid #a63f12;
+  color: #fff8f2; box-shadow: var(--key-up); align-self: center; height: 24px; width: 24px;
+}
+body.theme-skeuo #tab-new:active { transform: translateY(2px); box-shadow: var(--key-down); }
+
+/* View switcher = recessed well, active = orange key */
+body.theme-skeuo #view-switcher { background: #b8b5af; box-shadow: var(--well); border: 1px solid #8d8a84; border-radius: 8px; }
+body.theme-skeuo .view-btn { border-radius: 6px; }
+body.theme-skeuo .view-btn.active { background: var(--key-orange); color: #fff8f2; box-shadow: var(--key-down); font-weight: 700; }
+
+/* ── Tabs = dark keycap row ── */
+body.theme-skeuo #tab-list { gap: 5px; padding: 6px 4px; }
+body.theme-skeuo .tab {
+  background: var(--key-dark); border: 1px solid #2a2825; border-radius: 7px;
+  color: #cfccc6; margin: 0; box-shadow: var(--key-up);
+}
+body.theme-skeuo .tab.active { background: var(--key-cream); color: #2b2926; font-weight: 700; }
+body.theme-skeuo .tab.active::after { content: none; }
+body.theme-skeuo .tab-dot { color: #ff8a4d; text-shadow: 0 0 6px rgba(255,138,77,0.9); }  /* lit LED */
+body.theme-skeuo .tab-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
+
+/* ── Raw editor = amber VFD display ── */
+body.theme-skeuo .raw-editor {
+  background-color: #14110d;
+  background-image: repeating-linear-gradient(0deg, rgba(255,154,60,0.03) 0 1px, transparent 1px 3px);
+  color: #ffd9a0; caret-color: #ff8a4d;
+  text-shadow: 0 0 7px rgba(255,154,60,0.4);
+  box-shadow: inset 0 3px 12px rgba(0,0,0,0.8);
+}
+body.theme-skeuo .raw-editor::placeholder { color: rgba(255,217,160,0.35); }
+
+/* ── Organised view: section blocks = bolted panels ── */
+body.theme-skeuo #organised-view { padding: 16px 18px; }
+body.theme-skeuo .section-block {
+  border: 1px solid #9b9892; border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 3px 8px rgba(0,0,0,0.22);
+  margin-bottom: 12px;
+}
+body.theme-skeuo .section-head { background: linear-gradient(#f0eeea, #dcd9d3); border-bottom: 1px solid #a9a6a0; }
+body.theme-skeuo .sec-title { color: #2b2926; font-weight: 700; text-shadow: 0 1px 0 rgba(255,255,255,0.7); }
+body.theme-skeuo .section-body { background: #efedea; box-shadow: inset 0 2px 6px rgba(0,0,0,0.08); }
+
+/* Checkboxes = recessed wells that light up teal */
+body.theme-skeuo .check {
+  border-radius: 4px; border: 1px solid #8d8a84;
+  background: linear-gradient(#b8b5af, #cfccc6); box-shadow: var(--well);
+  color: transparent;
+}
+body.theme-skeuo .line-item.done .check {
+  background: radial-gradient(circle at 50% 38%, #7ff0dc, #17bfa5 60%, #0c8f7a);
+  box-shadow: 0 0 8px rgba(46,230,200,0.65), inset 0 1px 2px rgba(255,255,255,0.5);
+  color: #eafffb; border-color: #0c8f7a;
+}
+body.theme-skeuo .line-item.arrow-line { border-radius: 6px; border: 1px solid #e0b491; }
+
+/* ── Sidebar = recessed side panel ── */
+body.theme-skeuo #sidebar { background: linear-gradient(90deg, #d3d0ca, #dddad4); box-shadow: inset -2px 0 6px rgba(0,0,0,0.12); }
+body.theme-skeuo #sidebar-title::after {
+  content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: #2ee6c8; box-shadow: 0 0 6px rgba(46,230,200,0.8); margin-left: 6px;
+}
+body.theme-skeuo .section-link.active { background: linear-gradient(#ffffff, #e6e4df); box-shadow: var(--key-up); border-radius: 6px; margin: 1px 6px; padding: 5px 8px; border-left-color: var(--accent); }
+
+/* ── Inputs = dark wells ── */
+body.theme-skeuo #find-bar input,
+body.theme-skeuo .tb-field input,
+body.theme-skeuo .section-edit-area {
+  background: #1d1a17; color: #ffd9a0; border: 1px solid #8d8a84;
+  box-shadow: var(--well); text-shadow: 0 0 5px rgba(255,154,60,0.35);
+}
+
+/* ── Start page + modals = faceplates with screws + grille ── */
+body.theme-skeuo #start-page-inner,
+body.theme-skeuo #save-dialog-box,
+body.theme-skeuo #table-builder-box {
+  background-color: #e2dfd9; background-image: var(--screws);
+  border: 1px solid #9b9892; border-radius: 14px;
+  box-shadow: inset 0 1px 0 #fff, 0 12px 28px rgba(0,0,0,0.3);
+  padding: 26px 30px; position: relative;
+}
+body.theme-skeuo #start-page-inner::before,
+body.theme-skeuo #save-dialog-box::before,
+body.theme-skeuo #table-builder-box::before {
+  content: ''; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  width: 72px; height: 10px; border-radius: 2px; opacity: 0.5;
+  background-image: radial-gradient(#6f6c66 1px, transparent 1.2px);
+  background-size: 6px 4px;
+}
+body.theme-skeuo #start-page-title { color: #33312e; text-shadow: 0 1px 0 rgba(255,255,255,0.8); letter-spacing: 0.03em; }
+body.theme-skeuo .start-action { background: var(--key-orange) !important; border-color: #a63f12 !important; color: #fff8f2 !important; box-shadow: var(--key-up); }
+body.theme-skeuo #save-dialog-buttons button:first-child,
+body.theme-skeuo #table-builder-buttons button:first-child {
+  background: var(--key-orange); border-color: #a63f12; color: #fff8f2; box-shadow: var(--key-up);
+}
+
+/* ── Dropdown = dark key column ── */
+body.theme-skeuo .dropdown-menu { background: #2a2825; border: 1px solid #14110d; box-shadow: 0 8px 20px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1); }
+body.theme-skeuo .dropdown-item { color: #cfccc6; }
+body.theme-skeuo .dropdown-item:hover { background: var(--accent); color: #fff8f2; }
+body.theme-skeuo .dropdown-item.active { color: #ff8a4d; background: #3a3835; }
+
+/* ── Status bar = rubber foot with speaker grille ── */
+body.theme-skeuo #statusbar { background: linear-gradient(#33312e, #232120); border-top: 1px solid #14110d; text-shadow: 0 -1px 0 rgba(0,0,0,0.8); }
+body.theme-skeuo #statusbar::after {
+  content: ''; margin-left: auto; width: 54px; height: 12px; border-radius: 2px; opacity: 0.6;
+  background-image: radial-gradient(#0d0c0b 1px, transparent 1.2px); background-size: 6px 4px;
+}
+
+/* ── Scrollbars = grooves ── */
+body.theme-skeuo ::-webkit-scrollbar { width: 10px; }
+body.theme-skeuo ::-webkit-scrollbar-track { background: #c8c5bf; box-shadow: inset 0 0 4px rgba(0,0,0,0.2); }
+body.theme-skeuo ::-webkit-scrollbar-thumb { background: linear-gradient(90deg, #a9a6a0, #8d8a84); border-radius: 5px; border: 2px solid #c8c5bf; }
+
+/* ── Misc ── */
+body.theme-skeuo #drop-overlay { background: rgba(207,204,198,0.9); border: 3px dashed var(--accent); }
+body.theme-skeuo #drop-label { color: #a63f12; font-weight: 700; }
+body.theme-skeuo #zen-hint { background: #14110d; color: #ffd9a0; text-shadow: 0 0 6px rgba(255,154,60,0.5); border-radius: 6px; }
+body.theme-skeuo .md-code-block { background: #1d1a17; color: #ffd9a0; border-color: #14110d; text-shadow: 0 0 5px rgba(255,154,60,0.35); }
+body.theme-skeuo .md-inline-code { background: #1d1a17; color: #ffd9a0; }
+body.theme-skeuo #icon-sun { display: none !important; }
+body.theme-skeuo #icon-moon { display: block !important; }

@@ -538,3 +538,18 @@ body.zen #zen-hint { display: flex; }
 /* ── Window dragging: tabbar is the top chrome now ── */
 #tabbar { -webkit-app-region: drag; }
 #tab-list, #tab-new, #titlebar-controls { -webkit-app-region: no-drag; }
+/* ── Inline links ── */
+.inline-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.inline-link:hover {
+  text-decoration-color: var(--accent);
+  color: var(--accent-text);
+}
+
+/* Raw view Ctrl+Click hint — shown in statusbar on hover over a URL word */
+.raw-link-hint { color: var(--text3); font-size: 11px; margin-left: 8px; }
