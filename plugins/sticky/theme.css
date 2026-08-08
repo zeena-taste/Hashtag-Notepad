@@ -1,0 +1,127 @@
+/* ══════════════════════════════════════════════════════════════════
+   STICKY NOTES — corkboard + pastel post-its + washi tape
+   Organised-view sections become slightly-rotated sticky notes
+   pinned to a cork board. Notes straighten on hover (micro-interaction).
+   Chrome stays manila-paper light so everything stays readable.     */
+
+@font-face { font-family: 'Caveat'; src: url('fonts/static/Caveat-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Caveat'; src: url('fonts/static/Caveat-Bold.ttf') format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+
+body.theme-sticky {
+  --bg: #fdfbf5; --bg2: #f6efdf; --bg3: #efe5cf; --bg4: #e5d9bf;
+  --border: #d9c9a8; --border2: #b89f78;
+  --text: #33302a; --text2: #6b6252; --text3: #9c917c;
+  --accent: #d64541; --accent-bg: #fbe3e1; --accent-text: #b03430;
+  --titlebar: #f6efdf; --statusbar-bg: #33302a; --statusbar-text: #e8e2d4;
+  --done-text: #a1978a; --check-border: #b89f78; --check-done-bg: rgba(51,48,42,0.08);
+  --drag-handle: #b89f78;
+  --section-head: #fff9b1; --section-head-hover: #f7ef9d; --section-body: #fff9b1;
+  --arrow-bg: rgba(255,255,255,0.55); --arrow-border: #d64541; --arrow-text: #8c3532;
+  --md-h1: #d64541; --md-h2: #e07b39; --md-h3: #3f8f4f;
+  --md-h4: #2b6cb0; --md-h5: #7c5cbf; --md-h6: #8a8175;
+  --md-code: #b03430; --md-quote: #6b6252; --md-bold: #26231e; --md-italic: #4a4438;
+  --inline-edit-border: #d64541; --inline-edit-bg: #fffdf6; --fmt-bar: #f6efdf;
+  --sidebar-w: 200px;
+  /* custom tokens */
+  --ink: #33302a;
+  --note-shadow: 0 3px 6px rgba(60,40,10,0.22), 0 10px 18px rgba(60,40,10,0.14);
+}
+
+/* ── The corkboard ── */
+body.theme-sticky #organised-view {
+  background-color: #c59d6f;
+  background-image:
+    radial-gradient(rgba(120,86,45,0.28) 1.5px, transparent 1.6px),
+    radial-gradient(rgba(255,240,210,0.22) 1px, transparent 1.2px);
+  background-size: 26px 26px, 37px 37px;
+  background-position: 0 0, 13px 8px;
+  padding: 24px 22px;
+}
+
+/* ── Notes: square corners, lifted-paper shadow, slight rotation ── */
+body.theme-sticky .section-block {
+  position: relative; overflow: visible; border: none; border-radius: 2px;
+  margin-bottom: 20px; box-shadow: var(--note-shadow);
+  transform: rotate(-0.7deg); color: var(--ink);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+body.theme-sticky .section-block:nth-child(even) { transform: rotate(0.6deg); }
+body.theme-sticky .section-block:hover {
+  transform: rotate(0deg);  /* notes straighten when you grab them */
+  box-shadow: 0 5px 10px rgba(60,40,10,0.28), 0 14px 24px rgba(60,40,10,0.18);
+}
+/* washi tape */
+body.theme-sticky .section-block::before {
+  content: ''; position: absolute; top: -11px; left: 50%; z-index: 2;
+  width: 92px; height: 22px; transform: translateX(-50%) rotate(-2deg);
+  background: rgba(255,255,255,0.5);
+  border-left: 1px dashed rgba(255,255,255,0.8);
+  border-right: 1px dashed rgba(255,255,255,0.8);
+  box-shadow: 0 1px 2px rgba(60,40,10,0.18);
+}
+body.theme-sticky .section-block.drag-over { outline: 2px dashed var(--accent); outline-offset: 2px; }
+
+/* ── Pastel cycle: yellow → pink → blue → green ── */
+body.theme-sticky .section-block:nth-child(4n+1) .section-head,
+body.theme-sticky .section-block:nth-child(4n+1) .section-body { background: #fff9b1; }
+body.theme-sticky .section-block:nth-child(4n+2) .section-head,
+body.theme-sticky .section-block:nth-child(4n+2) .section-body { background: #ffd9e2; }
+body.theme-sticky .section-block:nth-child(4n+3) .section-head,
+body.theme-sticky .section-block:nth-child(4n+3) .section-body { background: #cfe6ff; }
+body.theme-sticky .section-block:nth-child(4n+4) .section-head,
+body.theme-sticky .section-block:nth-child(4n+4) .section-body { background: #d7f2c7; }
+body.theme-sticky .section-head:hover { filter: brightness(0.97); }
+body.theme-sticky .section-body { border-top: 1px solid rgba(51,48,42,0.12); }
+
+/* ── Handwritten note titles + muted ink details ── */
+body.theme-sticky .sec-title { font-family: 'Caveat', 'Segoe Print', 'Bradley Hand', cursive; font-size: 18px; font-weight: 700; }
+body.theme-sticky .sec-tag { font-family: 'Caveat', 'Segoe Print', cursive; font-size: 12.5px; }
+body.theme-sticky .chevron, body.theme-sticky .drag-handle { color: rgba(51,48,42,0.45); }
+body.theme-sticky .check { border: 1.5px solid rgba(51,48,42,0.4); border-radius: 3px; color: var(--accent-text); }
+body.theme-sticky .line-item.done .line-text { color: rgba(51,48,42,0.45); }
+body.theme-sticky .empty-section { font-family: 'Caveat', 'Segoe Print', cursive; font-size: 15px; font-style: normal; }
+
+/* ── Chrome handwriting accents ── */
+body.theme-sticky #app-name,
+body.theme-sticky #sidebar-title,
+body.theme-sticky .fmt-hint,
+body.theme-sticky #drop-label { font-family: 'Caveat', 'Segoe Print', 'Bradley Hand', cursive; }
+body.theme-sticky #sidebar-title { font-size: 15px; font-weight: 700; text-transform: none; letter-spacing: normal; }
+body.theme-sticky #app-name { font-size: 16px; font-weight: 700; }
+
+/* ── Start page = one big taped note ── */
+body.theme-sticky #start-page-inner {
+  position: relative; background: #fff9b1; border-radius: 2px;
+  padding: 30px 34px; transform: rotate(-1.2deg); box-shadow: var(--note-shadow);
+}
+body.theme-sticky #start-page-inner::before {
+  content: ''; position: absolute; top: -11px; left: 50%;
+  width: 110px; height: 24px; transform: translateX(-50%) rotate(-2deg);
+  background: rgba(255,255,255,0.5);
+  border-left: 1px dashed rgba(255,255,255,0.8);
+  border-right: 1px dashed rgba(255,255,255,0.8);
+  box-shadow: 0 1px 2px rgba(60,40,10,0.18);
+}
+body.theme-sticky #start-page-title { font-family: 'Caveat', 'Segoe Print', cursive; font-size: 32px; font-weight: 700; color: var(--ink); }
+body.theme-sticky #start-page-hint { color: rgba(51,48,42,0.6); }
+body.theme-sticky #start-page-recent-title { text-transform: none; letter-spacing: normal; font-size: 12px; color: rgba(51,48,42,0.55); }
+
+/* ── Modals are notes too ── */
+body.theme-sticky #save-dialog-box,
+body.theme-sticky #table-builder-box {
+  position: relative; background: #fff9b1; border: none; border-radius: 2px;
+  transform: rotate(-0.8deg); box-shadow: var(--note-shadow);
+}
+body.theme-sticky #save-dialog-box::before,
+body.theme-sticky #table-builder-box::before {
+  content: ''; position: absolute; top: -11px; left: 50%;
+  width: 92px; height: 22px; transform: translateX(-50%) rotate(-2deg);
+  background: rgba(255,255,255,0.5);
+  border-left: 1px dashed rgba(255,255,255,0.8);
+  border-right: 1px dashed rgba(255,255,255,0.8);
+}
+
+/* ── Scrollbars + icon ── */
+body.theme-sticky ::-webkit-scrollbar-thumb { background: var(--border2); }
+body.theme-sticky #icon-sun { display: none !important; }
+body.theme-sticky #icon-moon { display: block !important; }

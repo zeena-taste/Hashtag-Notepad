@@ -89,6 +89,21 @@ function newTab(filePath = null, content = '', activate = true) {
   ta.placeholder = 'Start typing…\n\nUse #hashtags to create sections\nUse - for bullet points\nUse => for sub-notes\nUse | col | col | for tables\n\nDrag & drop a .txt or .md file to open it'
   ta.value = content
   editorTextareas.appendChild(ta)
+  ta.addEventListener('click', e => {
+    // Ctrl+Click (or Cmd+Click on Mac) opens a URL under the cursor in raw view
+    if (!e.ctrlKey && !e.metaKey) return
+    const pos = ta.selectionStart
+    const text = ta.value
+    // Walk left to find start of potential URL
+    let start = pos
+    while (start > 0 && !/\s/.test(text[start - 1])) start--
+    // Walk right to find end
+    let end = pos
+    while (end < text.length && !/\s/.test(text[end])) end++
+    const word = text.slice(start, end)
+    const urlMatch = word.match(/https?:\/\/[^\s)<>"]+|www\.[^\s)<>"]+/)
+    if (urlMatch) openURL(urlMatch[0])
+  })
   ta.addEventListener('input', () => {
     const t = tabs.find(x => x.textareaEl === ta)
     if (!t) return
@@ -407,28 +422,75 @@ function commitTableCell(sectionTitle, lineIdx, colIdx, newValue) {
   updateStatus()
 }
 
+// ── Link detection ─────────────────────────────────────────────────────────
+// Matches https://, http://, and www. URLs
+const URL_RE = /https?:\/\/[^\s)<>"]+|www\.[^\s)<>"]+/g
+// Matches markdown links: [label](url)
+const MD_LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g
+
+function openURL(url) {
+  // Ensure www. links get a protocol before opening
+  const full = url.startsWith('www.') ? 'https://' + url : url
+  require('electron').shell.openExternal(full)
+}
+
 // ── Inline formatting renderer ─────────────────────────────────────────────
-function renderInlineFormatting(text) {
-  const span = document.createElement('span')
-  span.className = 'line-text'
+// Tokenizes text into: md-link, url, bold, italic, underline, code, plain.
+// Order matters — md-links are checked before plain URLs so [label](url)
+// doesn't get partially matched by the URL regex first.
+function tokenizeInline(text) {
   const tokens = []
   let i = 0
   while (i < text.length) {
+    // Markdown link: [label](url)
+    if (text[i] === '[') {
+      const mdm = text.slice(i).match(/^\[([^\]]+)\]\((https?:\/\/[^)]+)\)/)
+      if (mdm) { tokens.push({ type: 'md-link', label: mdm[1], url: mdm[2] }); i += mdm[0].length; continue }
+    }
+    // Plain URL: https:// or http:// or www.
+    if (text.startsWith('https://', i) || text.startsWith('http://', i) || text.startsWith('www.', i)) {
+      const rest = text.slice(i)
+      const um = rest.match(/^(https?:\/\/[^\s)<>"]+|www\.[^\s)<>"]+)/)
+      if (um) { tokens.push({ type: 'url', url: um[1] }); i += um[1].length; continue }
+    }
+    // Bold: **text**
     if (text.startsWith('**', i)) { const end = text.indexOf('**', i + 2); if (end !== -1) { tokens.push({ type: 'bold', text: text.slice(i + 2, end) }); i = end + 2; continue } }
-    if (text[i] === '*') { const end = text.indexOf('*', i + 1); if (end !== -1) { tokens.push({ type: 'italic', text: text.slice(i + 1, end) }); i = end + 1; continue } }
+    // Italic: *text*
+    if (text[i] === '*' && text[i + 1] !== '*') { const end = text.indexOf('*', i + 1); if (end !== -1) { tokens.push({ type: 'italic', text: text.slice(i + 1, end) }); i = end + 1; continue } }
+    // Underline: __text__
     if (text.startsWith('__', i)) { const end = text.indexOf('__', i + 2); if (end !== -1) { tokens.push({ type: 'underline', text: text.slice(i + 2, end) }); i = end + 2; continue } }
+    // Inline code: `text`
     if (text[i] === '`') { const end = text.indexOf('`', i + 1); if (end !== -1) { tokens.push({ type: 'code', text: text.slice(i + 1, end) }); i = end + 1; continue } }
+    // Plain text — accumulate into previous plain token if possible
     if (tokens.length && tokens[tokens.length - 1].type === 'plain') tokens[tokens.length - 1].text += text[i]
     else tokens.push({ type: 'plain', text: text[i] })
     i++
   }
-  tokens.forEach(tok => {
+  return tokens
+}
+
+function makeLink(label, url) {
+  const a = document.createElement('a')
+  a.className = 'inline-link'
+  a.textContent = label
+  a.title = url
+  a.href = '#'
+  a.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); openURL(url) })
+  return a
+}
+
+function renderInlineFormatting(text) {
+  const span = document.createElement('span')
+  span.className = 'line-text'
+  tokenizeInline(text).forEach(tok => {
     let el
-    if (tok.type === 'bold') { el = document.createElement('span'); el.className = 'fmt-bold'; el.textContent = tok.text }
-    else if (tok.type === 'italic') { el = document.createElement('span'); el.className = 'fmt-italic'; el.textContent = tok.text }
+    if      (tok.type === 'md-link')   el = makeLink(tok.label, tok.url)
+    else if (tok.type === 'url')       el = makeLink(tok.url, tok.url)
+    else if (tok.type === 'bold')      { el = document.createElement('span'); el.className = 'fmt-bold'; el.textContent = tok.text }
+    else if (tok.type === 'italic')    { el = document.createElement('span'); el.className = 'fmt-italic'; el.textContent = tok.text }
     else if (tok.type === 'underline') { el = document.createElement('span'); el.className = 'fmt-underline'; el.textContent = tok.text }
-    else if (tok.type === 'code') { el = document.createElement('span'); el.className = 'md-inline-code'; el.textContent = tok.text }
-    else el = document.createTextNode(tok.text)
+    else if (tok.type === 'code')      { el = document.createElement('span'); el.className = 'md-inline-code'; el.textContent = tok.text }
+    else                               el = document.createTextNode(tok.text)
     span.appendChild(el)
   })
   return span
@@ -515,44 +577,20 @@ function renderSidebar() {
 function jumpToSection(title) {
   const t = activeTab(); if (!t) return
   if (currentView === 'organised') {
-    // IDs are assigned raw ('sec-' + title). getElementById takes a literal
-    // string, NOT a selector — CSS.escape here made every spaced title unfindable.
-    const el = document.getElementById('sec-' + title)
+    const el = document.getElementById('sec-' + CSS.escape(title))
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    return
+  } else {
+    const text = t.textareaEl.value
+    const esc = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const m = new RegExp('^#+\\s*' + esc + '$', 'm').exec(text)
+    if (m) { t.textareaEl.focus(); t.textareaEl.setSelectionRange(m.index, m.index); t.textareaEl.scrollTop = text.substring(0, m.index).split('\n').length * 24 }
   }
-  // Raw view: find the heading line exactly the way parseContent sees it
-  // (same regex, same code-fence skipping), so sidebar and jump can never
-  // disagree about #tag Title vs # Title formats.
-  const lines = t.textareaEl.value.split('\n')
-  const re = t.isMd ? /^(#{1,6})\s+(.+)$/ : /^(#+)\s*(.+)$/
-  let target = -1, inCode = false
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].startsWith('```')) { inCode = !inCode; continue }
-    if (inCode) continue
-    const m = lines[i].match(re)
-    if (m && m[2].trim() === title) { target = i; break }
-  }
-  if (target === -1) return
-  const pos = lines.slice(0, target).join('\n').length + (target ? 1 : 0)
-  t.textareaEl.focus()
-  t.textareaEl.setSelectionRange(pos, pos)
-  // Scroll using the editor's REAL line-height (22px Lumina, ~23.6px old),
-  // with a 3-line lead-in so the heading isn't flush against the top edge.
-  const lh = parseFloat(getComputedStyle(t.textareaEl).lineHeight) || 22
-  t.textareaEl.scrollTop = Math.max(0, target * lh - lh * 3)
 }
 
 // ── MD inline render ───────────────────────────────────────────────────────
 function renderMdInline(text) {
-  const sp = document.createElement('span')
-  sp.innerHTML = escapeHtml(text)
-    .replace(/`([^`]+)`/g, '<span class="md-inline-code">$1</span>')
-    .replace(/\*\*(.+?)\*\*/g, '<span class="fmt-bold">$1</span>')
-    .replace(/\*(.+?)\*/g, '<span class="fmt-italic">$1</span>')
-    .replace(/__(.+?)__/g, '<span class="fmt-underline">$1</span>')
-    .replace(/_(.+?)_/g, '<span class="fmt-italic">$1</span>')
-  return sp
+  // Reuse the same tokenizer so .md files get clickable links too
+  return renderInlineFormatting(text)
 }
 
 function renderMdLines(lines, body) {
@@ -957,6 +995,7 @@ async function saveFile() {
     setTabModified(t, false)
     updateTabLabel(t)
     updateFileLabel(r)
+    emitPluginEvent('file-save', { filePath: r, content: t.textareaEl.value, isMd: t.isMd })
   }
 }
 
@@ -1005,6 +1044,8 @@ function loadFileIntoTab(tab, rawContent, filePath) {
     refreshStartPage()
     if (currentView === 'organised') renderOrganised()
   }
+  // Notify plugins a file was opened
+  emitPluginEvent('file-open', { filePath, content, isMd: tab.isMd })
 }
 
 function updateFileLabel(fp) {
@@ -1233,16 +1274,16 @@ function runFind() {
   }
   findIndex = findMatches.length ? 0 : -1
   updateFindStatus()
-  selectCurrentMatch(false)
+  selectCurrentMatch()
 }
 function updateFindStatus() {
   findCount.textContent = findMatches.length ? `${findIndex + 1} / ${findMatches.length}` : (findInput.value ? '0 / 0' : '')
 }
-function selectCurrentMatch(focusEditor = true) {
+function selectCurrentMatch() {
   const ed = activeEditor()
   if (!ed || findIndex === -1) return
   const m = findMatches[findIndex]
-  if (focusEditor) ed.focus()
+  ed.focus()
   ed.setSelectionRange(m.start, m.end)
   const line = ed.value.slice(0, m.start).split('\n').length
   ed.scrollTop = Math.max(0, (line - 5) * 20)
@@ -1349,6 +1390,165 @@ ipc.on('open-file-external', (_, d) => loadIntoTabSmart(d.content, d.filePath))
 ipc.on('check-save-before-close', () => requestCloseWindow())
 
 // ── Init ───────────────────────────────────────────────────────────────────
+// ── Plugin runtime ────────────────────────────────────────────────────────
+// The appBridge is the only way plugins can touch the editor — they never
+// get direct DOM access. We build it fresh here so it always reads current
+// state via closures rather than stale snapshots.
+const { makeRendererAPI } = require('./plugin-api')
+
+const _loadedPlugins = []   // { id, api } for each running plugin
+const _pluginCommands = []  // { id, label, run, icon, pluginId }
+const _pluginPanels   = []  // { id, el } for panels added to the layout
+
+function buildAppBridge() {
+  return {
+    getContent:    () => activeTab()?.textareaEl.value ?? '',
+    getFilePath:   () => activeTab()?.filePath ?? null,
+    isMd:          () => activeTab()?.isMd ?? false,
+    getSections:   () => {
+      const t = activeTab(); if (!t) return []
+      return parseContent(t.textareaEl.value, t.isMd)
+    },
+
+    setContent: (text) => {
+      const t = activeTab(); if (!t) return
+      setEditorValue(t.textareaEl, text)
+      setTabModified(t, true)
+      renderSidebar(); updateStatus()
+      if (currentView === 'organised') renderOrganised()
+    },
+
+    insertText: (text) => {
+      const t = activeTab(); if (!t) return
+      const ta = t.textareaEl
+      const pos = ta.selectionStart
+      const before = ta.value.slice(0, pos)
+      const after  = ta.value.slice(ta.selectionEnd)
+      ta.value = before + text + after
+      ta.setSelectionRange(pos + text.length, pos + text.length)
+      setTabModified(t, true); renderSidebar(); updateStatus()
+    },
+
+    setSection: (title, lines) => {
+      const t = activeTab(); if (!t) return
+      const sections = parseContent(t.textareaEl.value, t.isMd)
+      const sec = sections.find(s => s.title === title); if (!sec) return
+      sec.lines = lines
+      setEditorValue(t.textareaEl, sectionsToText(sections, t.isMd))
+      setTabModified(t, true); renderSidebar(); updateStatus()
+      if (currentView === 'organised') renderOrganised()
+    },
+
+    appendSection: (title, lines, tag = '#') => {
+      const t = activeTab(); if (!t) return
+      const sections = parseContent(t.textareaEl.value, t.isMd)
+      sections.push({ tag, title, level: tag.length, lines })
+      setEditorValue(t.textareaEl, sectionsToText(sections, t.isMd))
+      setTabModified(t, true); renderSidebar(); updateStatus()
+      if (currentView === 'organised') renderOrganised()
+    },
+
+    notify: (message, type = 'info') => showPluginToast(message, type),
+    confirm: (message) => window.confirm(message),
+    prompt:  (message, def = '') => window.prompt(message, def),
+
+    addPanel: (pluginId, html, position = 'bottom') => {
+      const el = document.createElement('div')
+      el.className = 'plugin-panel'
+      el.dataset.pluginId = pluginId
+      el.innerHTML = html
+      if (position === 'bottom') {
+        document.getElementById('statusbar').before(el)
+      } else {
+        document.getElementById('find-bar').after(el)
+      }
+      const entry = { id: pluginId, el }
+      _pluginPanels.push(entry)
+      return {
+        update: (newHtml) => { el.innerHTML = newHtml },
+        remove: () => { el.remove(); const i = _pluginPanels.indexOf(entry); if (i > -1) _pluginPanels.splice(i, 1) }
+      }
+    },
+
+    registerCommand: (cmd) => {
+      _pluginCommands.push(cmd)
+    },
+
+    addToolbarButton: ({ label, icon, title, onClick, pluginId }) => {
+      const btn = document.createElement('button')
+      btn.className = 'tb-btn plugin-tb-btn'
+      btn.title = title || label
+      btn.dataset.pluginId = pluginId
+      if (icon) btn.innerHTML = icon + ' ' + (label || '')
+      else btn.textContent = label || ''
+      btn.addEventListener('click', onClick)
+      document.getElementById('toolbar-right').prepend(btn)
+      return { remove: () => btn.remove() }
+    },
+  }
+}
+
+function showPluginToast(message, type = 'info') {
+  const toast = document.createElement('div')
+  toast.className = 'plugin-toast plugin-toast-' + type
+  toast.textContent = message
+  document.body.appendChild(toast)
+  setTimeout(() => toast.classList.add('plugin-toast-show'), 10)
+  setTimeout(() => {
+    toast.classList.remove('plugin-toast-show')
+    setTimeout(() => toast.remove(), 300)
+  }, 3000)
+}
+
+async function loadJsPlugins() {
+  let plugins = []
+  try { plugins = await ipc.invoke('plugin-api:discover') } catch { return }
+
+  const bridge = buildAppBridge()
+
+  for (const p of plugins) {
+    try {
+      // Execute plugin code in a sandboxed function — plugin receives only
+      // the api object, no globals, no require, no DOM references
+      const factory = new Function('module', 'exports', p.code + '\nreturn module.exports')
+      const mod = { exports: {} }
+      factory(mod, mod.exports)
+      const entry = typeof mod.exports === 'function' ? mod.exports : mod.exports.default
+      if (typeof entry !== 'function') {
+        console.warn(`[plugin-api] plugin "${p.id}" does not export a function, skipping`)
+        continue
+      }
+      const api = makeRendererAPI(p.id, ipc, bridge)
+      entry(api)
+      _loadedPlugins.push({ id: p.id, api })
+    } catch (e) {
+      console.error(`[plugin-api] failed to start plugin "${p.id}":`, e)
+    }
+  }
+}
+
+// Fire a lifecycle event into all loaded plugins
+function emitPluginEvent(event, data) {
+  _loadedPlugins.forEach(({ api }) => {
+    try { api._emit(event, data) } catch (e) { console.error('[plugin-api] event emit error', e) }
+  })
+}
+
+// Hook into existing file ops so plugins get lifecycle events automatically.
+// We patch these after the functions are defined but before init() runs.
+const _origLoadFileIntoTab = loadFileIntoTab
+// Debounce onChange so it doesn't fire on every keystroke
+let _changeDebounceTimer = null
+function _scheduleChangeEvent() {
+  clearTimeout(_changeDebounceTimer)
+  _changeDebounceTimer = setTimeout(() => {
+    emitPluginEvent('change', {
+      content:  activeTab()?.textareaEl.value ?? '',
+      filePath: activeTab()?.filePath ?? null,
+    })
+  }, 300)
+}
+
 async function init() {
   try {
     const prefs = await ipc.invoke('get-prefs')
@@ -1370,5 +1570,8 @@ async function init() {
   newTab()
   updateStatus()
   refreshStartPage()
+
+  // Load JS plugins last so the editor is ready when they call api methods
+  await loadJsPlugins()
 }
 init()
