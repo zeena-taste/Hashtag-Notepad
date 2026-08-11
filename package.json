@@ -1,6 +1,6 @@
 {
   "name": "HashtagNotepad",
-  "version": "3.1.1",
+  "version": "3.2.0",
   "description": "A lightweight notepad with collapsible #hashtag sections",
   "author": {
     "name": "Hashtag Notepad",
@@ -119,9 +119,7 @@
     ],
     "files": [
       "src/**/*",
-      "plugins/**/*",
-      "assets/icon.ico",
-      "package.json"
+      "plugins/**/*"
     ]
   },
   "devDependencies": {

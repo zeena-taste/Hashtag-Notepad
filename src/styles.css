@@ -536,8 +536,15 @@ body.zen #zen-hint { display: flex; }
 }
 
 /* ── Window dragging: tabbar is the top chrome now ── */
-#tabbar { -webkit-app-region: drag; }
-#tab-list, #tab-new, #titlebar-controls { -webkit-app-region: no-drag; }
+#tabbar {
+  -webkit-app-region: drag;
+}
+
+#tab-list,
+#tab-new,
+#titlebar-controls {
+  -webkit-app-region: no-drag;
+}
 /* ── Inline links ── */
 .inline-link {
   color: var(--accent);

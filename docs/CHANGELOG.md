@@ -1,6 +1,26 @@
 # Changelog
 
+## 3.2.0
+
+**Changed**
+- renderer.js split into feature modules (state, dom, tabs, views, file-ops, ui, export) — no behavior change
+
+**Fixed**
+- Organised-view edits (table cells, section edit box, inline lines) no longer vanish when switching to Raw view or changing tabs — pending edits are now committed before the switch
+- Table rows with an empty first cell no longer lose the first column
+- All-empty table rows are no longer misread as separator lines and swallowed
+- HTML/PDF export renders tables with empty leading cells correctly
+
+## v3.1.1
+**Fixed**
+- restored theme plugin loading and removed abonded plugin-api code
+- Cleaned up dead JS plugin runtime code (loadJsPlugins, buildAppBridge, emitPluginEvent, etc.)
+- Removed leftover emitPluginEvent calls from file save/load operations
+- Fixed setEditorValue to attempt execCommand before .value assignment to preserve undo history
+- Added console error logging for theme plugin IPC failures instead of silently catchi
+
 ## v3.1.0
+**Added**
 - URLs (https://, http://, www.) render as clickable links in organised view
 - Markdown links [label](url) render with the label as the link text
 - Ctrl+Click opens URLs in raw view

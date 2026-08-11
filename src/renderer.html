@@ -2,6 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' 'unsafe-inline' ; img-src 'self' data:; font-src 'self';">
 <title>Hashtag Notepad</title>
 <link rel="stylesheet" href="styles.css">
 </head>
@@ -19,13 +20,13 @@
   <button id="tab-new" onclick="newTab()" title="New tab (Ctrl+T)">+</button>
   <!-- WINDOW CONTROLS -->
   <div id="titlebar-controls">
-    <button id="btn-min-win" onclick="ipcRenderer.send('minimize-window')" title="Minimize">
+    <button id="btn-min-win" title="Minimize">
       <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1 5.5 h8" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
     </button>
-    <button id="btn-max-win" onclick="ipcRenderer.send('maximize-window')" title="Maximize">
+    <button id="btn-max-win" title="Maximize">
       <svg width="10" height="10" viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
     </button>
-    <button id="btn-close-win" onclick="ipcRenderer.send('close-window')" title="Close">
+    <button id="btn-close-win" title="Close">
       <svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 1.5 l7 7 M8.5 1.5 l-7 7" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
     </button>
   </div>
