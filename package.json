@@ -1,6 +1,6 @@
 {
   "name": "HashtagNotepad",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "A lightweight notepad with collapsible #hashtag sections",
   "author": {
     "name": "Hashtag Notepad",
@@ -26,6 +26,9 @@
     "directories": {
       "output": "dist"
     },
+    "extraResources": [
+      { "from": "assets/icon.ico", "to": "icon.ico" }
+    ],
     "win": {
       "target": [
         {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.2.1
+**Fixed**
+- Packaged Windows build no longer opens on a black screen
+
 ## 3.2.0
 
 **Changed**
