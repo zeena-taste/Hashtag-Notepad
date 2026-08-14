@@ -1,5 +1,24 @@
 # Changelog
 
+## 3.4.0
+**Added**
+- **Spellcheck context menu** — right-clicking a misspelled word now shows live
+  dictionary suggestions that fix the word in place, plus "Add to dictionary".
+  Editable areas also get a proper undo/redo/cut/copy/paste menu (Electron ships
+  none by default).
+- **As-you-type autocorrect** — common misspellings (teh, recieve, seperate…)
+  correct themselves the moment you hit space or punctuation. Undo-safe:
+  Ctrl+Z still works and the Organised view / status bar stay in sync.
+- **Collapsed sidebar tooltips** — hovering the `#`/`##`/`###` minimap glyphs
+  now shows an instant, theme-matched tooltip with the section title,
+  replacing the slow native OS tooltip.
+
+### Changed
+- New `src/autocorrect.js` renderer module (added to the package.json build
+  files list).
+- ARCHITECTURE.md updated for the new module, the context menu, and the
+  collapsed-rail behavior.
+
 ## 3.3.0
 **Changed**
 - Sidebar is now resizable by dragging its right edge.

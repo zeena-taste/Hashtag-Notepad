@@ -26,9 +26,23 @@ function renderSidebar() {
   sections.filter(s => s.title).forEach(s => {
     const el = document.createElement('div')
     el.className = 'section-link'
-    el.dataset.level = s.level;   // heading depth 1–6, same value used for the ## sec-tag / indentation
-    el.dataset.secTitle = s.title; // used to re-find this link when highlighting the active section
-    el.title = s.title;           // free bonus: hovering shows the section name as a tooltip
+    el.dataset.level = s.level;
+    el.dataset.secTitle = s.title;
+    el.addEventListener('mouseenter', (e) => {
+      // Only show the custom tooltip when the sidebar is collapsed
+      if (document.getElementById('sidebar').classList.contains('collapsed')) {
+        showSidebarTooltip(e, s.title)
+      }
+    })
+    
+    el.addEventListener('mousemove', (e) => {
+      if (sidebarTooltip && sidebarTooltip.style.opacity === '1') {
+        sidebarTooltip.style.left = `${e.clientX + 14}px`
+        sidebarTooltip.style.top = `${e.clientY + 14}px`
+      }
+    })
+    
+    el.addEventListener('mouseleave', hideSidebarTooltip)
     const depth = Math.max(0, (s.level || 1) - 1)
     const cc = t.isMd ? headingColorClass(s.level) : ''
     const tagHtml = t.isMd ? `<span class="sl-tag">${s.tag}</span>` : ''
@@ -350,6 +364,33 @@ function closeTableBuilder() {
   dom.tableBuilder.classList.add('hidden')
   document.getElementById('tbl-cols').removeEventListener('input', updateTablePreview)
   document.getElementById('tbl-rows').removeEventListener('input', updateTablePreview)
+}
+
+// ── Custom Sidebar Tooltip (escapes sidebar overflow) ──
+let sidebarTooltip = null
+
+function showSidebarTooltip(e, title) {
+  if (!sidebarTooltip) {
+    sidebarTooltip = document.createElement('div')
+    sidebarTooltip.style.cssText = `
+      position: fixed; z-index: 9999; pointer-events: none;
+      background: var(--bg3); border: 1px solid var(--border2);
+      color: var(--text); padding: 6px 10px; border-radius: 4px;
+      font-size: 12px; font-weight: 500; max-width: 250px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      opacity: 0; transition: opacity 0.1s ease;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    `
+    document.body.appendChild(sidebarTooltip)
+  }
+  sidebarTooltip.textContent = title
+  sidebarTooltip.style.left = `${e.clientX + 14}px`
+  sidebarTooltip.style.top = `${e.clientY + 14}px`
+  sidebarTooltip.style.opacity = '1'
+}
+
+function hideSidebarTooltip() {
+  if (sidebarTooltip) sidebarTooltip.style.opacity = '0'
 }
 
 module.exports.headingColorClass = headingColorClass

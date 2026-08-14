@@ -8,6 +8,7 @@ const viewsMod = require('./views')
 const uiMod = require('./ui')
 const fileOpsMod = require('./file-ops')
 const exportMod = require('./export')
+const autocorrectMod = require('./autocorrect')
 
 Object.assign(window, tabsMod, viewsMod, uiMod, fileOpsMod, exportMod)
 
@@ -42,6 +43,9 @@ dom.replaceInput.addEventListener('keydown', e => {
 document.addEventListener('dragover', fileOpsMod.onDragOver)
 document.addEventListener('dragleave', fileOpsMod.onDragLeave)
 document.addEventListener('drop', fileOpsMod.onDrop)
+
+// ── Autocorrect (as-you-type) ──────────────────────────────────────────────
+autocorrectMod.initAutocorrect(document)
 
 // ── Keyboard ───────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {

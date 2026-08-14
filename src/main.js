@@ -1,4 +1,5 @@
-const { app, BrowserWindow, dialog, ipcMain, nativeTheme } = require('electron')
+// Add Menu and MenuItem to the destructuring
+const { app, BrowserWindow, dialog, ipcMain, nativeTheme, Menu, MenuItem } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -33,7 +34,8 @@ function createWindow(filePath = null, content = null) {
     title: filePath ? path.basename(filePath) + ' — Hashtag Notepad' : 'Hashtag Notepad',
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      spellcheck: true,
     }
   })
 
@@ -70,6 +72,44 @@ function createWindow(filePath = null, content = null) {
     }
   })
   win.on('closed', () => windows.delete(win))
+
+  // ── Context Menu (Spellcheck suggestions & Cut/Copy/Paste) ──
+  win.webContents.on('context-menu', (event, params) => {
+    const menu = new Menu()
+
+    if (params.misspelledWord) {
+      for (const suggestion of params.dictionarySuggestions.slice(0, 5)) {
+        menu.append(new MenuItem({
+          label: suggestion,
+          click: () => win.webContents.replaceMisspelling(suggestion)
+        }))
+      }
+      if (!params.dictionarySuggestions.length) {
+        menu.append(new MenuItem({ label: 'No suggestions', enabled: false }))
+      }
+      menu.append(new MenuItem({ type: 'separator' }))
+      menu.append(new MenuItem({
+        label: 'Add to dictionary',
+        click: () => win.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord)
+      }))
+      menu.append(new MenuItem({ type: 'separator' }))
+    }
+
+    if (params.isEditable) {
+      menu.append(new MenuItem({ role: 'undo' }))
+      menu.append(new MenuItem({ role: 'redo' }))
+      menu.append(new MenuItem({ type: 'separator' }))
+      menu.append(new MenuItem({ role: 'cut' }))
+      menu.append(new MenuItem({ role: 'copy' }))
+      menu.append(new MenuItem({ role: 'paste' }))
+      menu.append(new MenuItem({ role: 'selectAll' }))
+    } else if (params.selectionText) {
+      menu.append(new MenuItem({ role: 'copy' }))
+    }
+
+    if (menu.items.length) menu.popup()
+  })
+
   return win
 }
 

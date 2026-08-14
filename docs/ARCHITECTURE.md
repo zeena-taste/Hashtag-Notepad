@@ -11,8 +11,10 @@ hashtag-notepad/
 │
 ├── src/                     All application source code.
 │   ├── main.js              Electron main process. Manages windows, file I/O,
-│   │                        IPC handlers, preferences, and plugin discovery.
-│   │                        Does not touch the UI directly.
+│   │                        IPC handlers, preferences, plugin discovery, and
+│   │                        the spellcheck context menu (suggestions,
+│   │                        add-to-dictionary, edit roles). Does not touch
+│   │                        the UI directly.
 │   │
 │   ├── renderer.html        The single HTML page. All UI structure is here —
 │   │                        every div, button, and layer. Nothing is injected
@@ -36,12 +38,18 @@ hashtag-notepad/
 │   ├── views.js              Content parsing, the Organised view renderer,
 │   │                        inline editing, drag-to-reorder, tables, the
 │   │                        inline-formatting tokenizer, the format toolbar.
-│   ├── ui.js                Sidebar rendering, status bar, theme switching,
-│   │                        find & replace, table-builder modal, start page.
+│   ├── ui.js                Sidebar rendering + collapsed-rail hover tooltip,
+│   │                        status bar, theme switching, find & replace,
+│   │                        table-builder modal, start page.
 │   ├── file-ops.js          Open/save/save-as, drag & drop, the hidden
 │   │                        done/order/collapsed state block.
 │   ├── export.js            Organised view → standalone HTML/PDF string
 │   │                        generation.
+│   ├── autocorrect.js       As-you-type autocorrect for common misspellings.
+│   │                        One delegated `input` listener; undo-safe
+│   │                        replacement via execCommand('insertText').
+│   │                        Leaf module (v3.4.0) — remember the
+│   │                        package.json "files" array.
 │   │
 │   ├── styles.css           All styling. One flat file, no preprocessor.
 │   │                        Structured in sections matching the DOM order.
@@ -512,6 +520,31 @@ Zen mode adds `body.zen` class. The CSS hides: `#tabbar`, `#toolbar`, `#sidebar`
 If your theme wants to style zen mode differently (e.g. show a minimal ribbon instead of hiding the toolbar entirely), target `body.zen #toolbar` and override `display: none !important` with a higher-specificity rule.
 
 ---
+
+## Spellcheck, autocorrect & sidebar tooltip
+Chromium's built-in spellchecker draws the squiggles in the raw textarea
+(`spellcheck: true` in `webPreferences`). Electron ships no context menu, so
+`main.js` builds one per window from the `context-menu` event:
+`params.dictionarySuggestions` become click-to-apply items
+(`webContents.replaceMisspelling`), plus "Add to dictionary"
+(`session.addWordToSpellCheckerDictionary`) and the standard edit roles.
+The handler must live inside `createWindow()` — `win` is not in scope at
+module top level.
+
+As-you-type autocorrect lives in `autocorrect.js`: one delegated `input`
+listener (attached to `document` in `renderer.js`) watches for trigger
+characters (space/punctuation), matches the preceding word against a small
+typo map, and replaces it via `setSelectionRange` +
+`execCommand('insertText')` — chosen deliberately because it keeps the
+native undo stack intact and fires a real `input` event, so tab state, the
+Organised view, and the status bar all stay in sync.
+
+The collapsed-rail tooltip is a single `position: fixed` div created by
+`ui.js` and appended to `document.body` — it must live outside `#sidebar`
+because the sidebar's `overflow: hidden` would clip any tooltip rendered
+inside it. Shown on `mouseenter` only while `#sidebar.collapsed`, follows
+the cursor on `mousemove`. The native `title` attribute is intentionally
+NOT set on `.section-link` (it would double up with the custom tooltip).
 
 ## Fonts in use
 
