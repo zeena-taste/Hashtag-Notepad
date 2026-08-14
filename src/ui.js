@@ -26,9 +26,12 @@ function renderSidebar() {
   sections.filter(s => s.title).forEach(s => {
     const el = document.createElement('div')
     el.className = 'section-link'
+    el.dataset.level = s.level;   // heading depth 1–6, same value used for the ## sec-tag / indentation
+    el.title = s.title;           // free bonus: hovering shows the section name as a tooltip
     const depth = Math.max(0, (s.level || 1) - 1)
     const cc = t.isMd ? headingColorClass(s.level) : ''
-    el.innerHTML = `<span style="width:${depth * 10}px;display:inline-block;flex-shrink:0"></span><span class="sl-label ${cc}">${s.tag}${t.isMd ? ' ' : ''}${escapeHtml(s.title)}</span>`
+    const tagHtml = t.isMd ? `<span class="sl-tag">${s.tag}</span>` : ''
+    el.innerHTML = `<span style="width:${depth * 6}px;display:inline-block;flex-shrink:0"></span>${tagHtml}<span class="sl-label ${cc}">${escapeHtml(s.title)}</span>`
     el.onclick = () => jumpToSection(s.title)
     dom.sectionList.appendChild(el)
   })
@@ -68,6 +71,46 @@ function updateStatus() {
 function toggleSidebar() {
   state.sidebarCollapsed = !state.sidebarCollapsed
   dom.sidebar.classList.toggle('collapsed', state.sidebarCollapsed)
+}
+
+// ── Sidebar resize ───────────────────────────────────────────────────────
+// Self-contained: builds its own drag handle so no HTML/dom.js changes are
+// required. Call uiMod.initSidebarResize() once during app init.
+const SIDEBAR_MIN_W = 160
+const SIDEBAR_MAX_W = 420
+
+function initSidebarResize() {
+  if (dom.sidebar.querySelector('.sidebar-resizer')) return // already wired up
+  dom.sidebar.appendChild(Object.assign(document.createElement('div'), { className: 'sidebar-resizer' }))
+  const handle = dom.sidebar.querySelector('.sidebar-resizer')
+
+  let dragging = false, startX = 0, startW = 0
+
+  handle.addEventListener('mousedown', e => {
+    if (state.sidebarCollapsed) return
+    dragging = true
+    startX = e.clientX
+    startW = dom.sidebar.getBoundingClientRect().width
+    dom.sidebar.classList.add('resizing')
+    document.body.style.cursor = 'col-resize'
+    e.preventDefault()
+  })
+
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return
+    const w = Math.min(SIDEBAR_MAX_W, Math.max(SIDEBAR_MIN_W, startW + (e.clientX - startX)))
+    document.documentElement.style.setProperty('--sidebar-w', w + 'px')
+  })
+
+  window.addEventListener('mouseup', () => {
+    if (!dragging) return
+    dragging = false
+    dom.sidebar.classList.remove('resizing')
+    document.body.style.cursor = ''
+    // Optional persistence — no-op unless you add a 'set-sidebar-width-pref'
+    // handler in main.js, same pattern as the existing 'set-theme-pref'.
+    try { ipc.send('set-sidebar-width-pref', document.documentElement.style.getPropertyValue('--sidebar-w')) } catch (e) {}
+  })
 }
 
 // ── Zen mode ─────────────────────────────────────────────────────────────
@@ -281,6 +324,7 @@ module.exports.jumpToSection = jumpToSection
 module.exports.updateFileLabel = updateFileLabel
 module.exports.updateStatus = updateStatus
 module.exports.toggleSidebar = toggleSidebar
+module.exports.initSidebarResize = initSidebarResize
 module.exports.toggleZen = toggleZen
 module.exports.applyTheme = applyTheme
 module.exports.effectiveTheme = effectiveTheme
