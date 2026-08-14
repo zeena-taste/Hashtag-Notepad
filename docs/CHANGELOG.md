@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.3.0
+**Changed**
+- Sidebar is now resizable by dragging its right edge.
+- Collapsed sidebar uses colored dots instead of hash-mark stacks for a cleaner look.
+- The section you're currently viewing is now highlighted in the sidebar
+  (tracks as you scroll in organised view, or when you jump to a section).
+- Tightened indentation and tag sizing in the expanded sidebar so titles show more text.
+**Fixes**
+Save Dialog Overflow: Fixed a visual glitch where extremely long, unbroken filenames
+
 ## 3.2.1
 **Fixed**
 - Packaged Windows build no longer opens on a black screen

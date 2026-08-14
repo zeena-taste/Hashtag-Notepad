@@ -268,7 +268,7 @@ body.theme-light #btn-close-win:hover { background: #ba1a1a !important; color: #
   white-space: nowrap; transition: background 0.2s ease, color 0.2s ease;
 }
 .section-link:hover { background: var(--bg3); color: var(--text); }
-.section-link.active { border-left-color: var(--accent); color: var(--text); background: var(--bg3); }
+.section-link.active { border-left-color: var(--accent); color: var(--accent-text); background: var(--accent-bg); }
 .sl-tag {
   flex-shrink: 0; font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
   font-size: 10px; letter-spacing: -0.03em; color: var(--text3); opacity: 0.6;
@@ -462,9 +462,16 @@ body.theme-light #btn-close-win:hover { background: #ba1a1a !important; color: #
   position: fixed; inset: 0; background: rgba(0,0,0,0.55);
   display: flex; align-items: center; justify-content: center; z-index: 100;
 }
-#save-dialog-box { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 24px; width: 300px; }
+#save-dialog-box {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+  padding: 24px; width: 300px;
+  max-width: calc(100vw - 48px);
+}
 #save-dialog-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; user-select: none; }
-#save-dialog-msg { font-size: 13px; color: var(--text2); margin-bottom: 20px; user-select: none; }
+#save-dialog-msg {
+  font-size: 13px; color: var(--text2); margin-bottom: 20px; user-select: none;
+  overflow-wrap: anywhere;         /* lets long filenames wrap mid-word instead of escaping the box */
+}
 #save-dialog-buttons { display: flex; gap: 8px; justify-content: flex-end; }
 #save-dialog-buttons button {
   padding: 6px 16px; border: 1px solid var(--border); background: var(--bg4);

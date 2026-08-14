@@ -27,6 +27,7 @@ function renderSidebar() {
     const el = document.createElement('div')
     el.className = 'section-link'
     el.dataset.level = s.level;   // heading depth 1–6, same value used for the ## sec-tag / indentation
+    el.dataset.secTitle = s.title; // used to re-find this link when highlighting the active section
     el.title = s.title;           // free bonus: hovering shows the section name as a tooltip
     const depth = Math.max(0, (s.level || 1) - 1)
     const cc = t.isMd ? headingColorClass(s.level) : ''
@@ -35,10 +36,43 @@ function renderSidebar() {
     el.onclick = () => jumpToSection(s.title)
     dom.sectionList.appendChild(el)
   })
+  // sidebar just got rebuilt from scratch, so re-apply whichever section was active
+  if (state.activeSectionTitle) highlightActiveLink(state.activeSectionTitle)
+}
+
+// Marks the sidebar link for `title` as active and clears any other. Safe to
+// call with a title that isn't currently rendered (e.g. mid-rebuild).
+function highlightActiveLink(title) {
+  state.activeSectionTitle = title
+  dom.sectionList.querySelectorAll('.section-link').forEach(el => {
+    el.classList.toggle('active', el.dataset.secTitle === title)
+  })
+}
+
+// ── Active-section tracking (scroll-spy) ─────────────────────────────────
+// Organised view: an IntersectionObserver watches each `#sec-<title>` block
+// and highlights whichever one is topmost/visible as you scroll.
+// Call observeSectionBlocks() once after the organised view re-renders its
+// section blocks, and call initActiveSectionTracking() once during app init.
+let sectionObserver = null
+function initActiveSectionTracking() {
+  if (!('IntersectionObserver' in window) || !dom.organisedView) return
+  sectionObserver = new IntersectionObserver(entries => {
+    const visible = entries
+      .filter(e => e.isIntersecting)
+      .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+    if (visible.length) highlightActiveLink(visible[0].target.id.replace(/^sec-/, ''))
+  }, { root: dom.organisedView, rootMargin: '-10% 0px -70% 0px', threshold: 0 })
+}
+function observeSectionBlocks() {
+  if (!sectionObserver || !dom.organisedView) return
+  sectionObserver.disconnect()
+  dom.organisedView.querySelectorAll('[id^="sec-"]').forEach(el => sectionObserver.observe(el))
 }
 
 function jumpToSection(title) {
   const t = tabsMod.activeTab(); if (!t) return
+  highlightActiveLink(title)
   if (state.currentView === 'organised') {
     const el = document.getElementById('sec-' + title)
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -320,6 +354,9 @@ function closeTableBuilder() {
 
 module.exports.headingColorClass = headingColorClass
 module.exports.renderSidebar = renderSidebar
+module.exports.highlightActiveLink = highlightActiveLink
+module.exports.initActiveSectionTracking = initActiveSectionTracking
+module.exports.observeSectionBlocks = observeSectionBlocks
 module.exports.jumpToSection = jumpToSection
 module.exports.updateFileLabel = updateFileLabel
 module.exports.updateStatus = updateStatus
