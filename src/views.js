@@ -4,8 +4,9 @@ const { setEditorValue } = require('./utils')
 
 const tabsMod = require('./tabs')
 const uiMod = require('./ui')
+const fs = require('fs')
+const path = require('path')
 
-// BULLETPROOF raw write. Direct assignment works whether the
 // textarea is visible, hidden, focused or not. No utils dependency.
 function writeRawText(t, text) {
   const ta = t.textareaEl
@@ -206,6 +207,11 @@ function tokenizeInline(text) {
   const tokens = []
   let i = 0
   while (i < text.length) {
+    // Image: ![alt](src)
+    if (text.startsWith('![', i)) {
+      const im = text.slice(i).match(/^!\[([^\]]*)\]\(([^)]+)\)/)
+      if (im) { tokens.push({ type: 'image', alt: im[1], src: im[2] }); i += im[0].length; continue }
+    }
     // Markdown link: [label](url)
     if (text[i] === '[') {
       const mdm = text.slice(i).match(/^\[([^\]]+)\]\((https?:\/\/[^)]+)\)/)
@@ -233,6 +239,35 @@ function tokenizeInline(text) {
   return tokens
 }
 
+// ── Images ─
+function resolveImageSrc(src, tab) {
+  if (/^(https?:|data:)/i.test(src)) return src
+  if (!tab || !tab.filePath) return null   // unsaved tab, can't resolve relative paths
+  const base = path.dirname(tab.filePath)
+  const p = path.isAbsolute(src) ? path.normalize(src) : path.resolve(base, decodeURIComponent(src))
+  try {
+    const buf = fs.readFileSync(p)
+    const ext = (path.extname(p).slice(1) || 'png').toLowerCase()
+    const mime = ext === 'jpg' ? 'image/jpeg' : ext === 'svg' ? 'image/svg+xml' : 'image/' + ext
+    return 'data:' + mime + ';base64,' + buf.toString('base64')
+  } catch { return null }
+}
+function makeImageEl(alt, src, inline) {
+  const resolved = resolveImageSrc(src, tabsMod.activeTab())
+  if (!resolved) {
+    const miss = document.createElement(inline ? 'span' : 'div')
+    miss.className = 'md-image-missing'
+    miss.textContent = '[image not found: ' + src + ']'
+    return miss
+  }
+  const img = document.createElement('img')
+  img.src = resolved; img.alt = alt || ''; img.title = alt || ''
+  if (inline) { img.className = 'md-img-inline'; return img }
+  const wrap = document.createElement('div'); wrap.className = 'md-image'
+  wrap.appendChild(img)
+  return wrap
+}
+
 function makeLink(label, url) {
   const a = document.createElement('a')
   a.className = 'inline-link'
@@ -254,6 +289,7 @@ function renderInlineFormatting(text) {
     else if (tok.type === 'italic')    { el = document.createElement('span'); el.className = 'fmt-italic'; el.textContent = tok.text }
     else if (tok.type === 'underline') { el = document.createElement('span'); el.className = 'fmt-underline'; el.textContent = tok.text }
     else if (tok.type === 'code')      { el = document.createElement('span'); el.className = 'md-inline-code'; el.textContent = tok.text }
+    else if (tok.type === 'image')     el = makeImageEl(tok.alt, tok.src, true)
     else                               el = document.createTextNode(tok.text)
     span.appendChild(el)
   })
@@ -328,18 +364,20 @@ function renderMdLines(lines, body) {
       body.appendChild(renderTable(tableLines))
       i = endIdx; continue
     }
+    const im = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/)
+    if (im) { body.appendChild(makeImageEl(im[1], im[2], false)); i++; continue }
     const hm = line.match(/^(#{1,6})\s+(.+)$/)
     if (hm) { const d = document.createElement('div'); d.className = 'md-h' + hm[1].length; d.appendChild(renderMdInline(hm[2])); body.appendChild(d); i++; continue }
     if (line.startsWith('> ')) { const d = document.createElement('div'); d.className = 'md-blockquote'; d.appendChild(renderMdInline(line.substring(2))); body.appendChild(d); i++; continue }
     const lm = line.match(/^([ \t]*)[-*] (.*)$/)
-if (lm) {
-  const depth = Math.min(8, Math.floor(lm[1].replace(/\t/g, '  ').length / 2))
-  const item = document.createElement('div'); item.className = 'line-item'
-  if (depth) { item.style.marginLeft = (depth * 18) + 'px'; item.classList.add('nested') }
-  const dot = document.createElement('span'); dot.className = 'bullet-dot'; dot.textContent = '–'
-  const txt = document.createElement('span'); txt.appendChild(renderMdInline(lm[2]))
-  item.appendChild(dot); item.appendChild(txt); body.appendChild(item); i++; continue
-} { const item = document.createElement('div'); item.className = 'line-item'; const dot = document.createElement('span'); dot.className = 'bullet-dot'; dot.textContent = '–'; const txt = document.createElement('span'); txt.appendChild(renderMdInline(line.substring(2))); item.appendChild(dot); item.appendChild(txt); body.appendChild(item); i++; continue }
+    if (lm) {
+      const depth = Math.min(8, Math.floor(lm[1].replace(/\t/g, '  ').length / 2))
+      const item = document.createElement('div'); item.className = 'line-item'
+      if (depth) { item.style.marginLeft = (depth * 18) + 'px'; item.classList.add('nested') }
+      const dot = document.createElement('span'); dot.className = 'bullet-dot'; dot.textContent = '–'
+      const txt = document.createElement('span'); txt.appendChild(renderMdInline(lm[2]))
+      item.appendChild(dot); item.appendChild(txt); body.appendChild(item); i++; continue
+    }
     if (line.match(/^-{3,}$/) || line.match(/^\*{3,}$/)) { const hr = document.createElement('div'); hr.className = 'md-hr'; body.appendChild(hr); i++; continue }
     if (line.trim() === '') { const sp = document.createElement('div'); sp.style.height = '6px'; body.appendChild(sp); i++; continue }
     const d = document.createElement('div'); d.className = 'md-plain'; d.appendChild(renderMdInline(line)); body.appendChild(d); i++

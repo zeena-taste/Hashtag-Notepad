@@ -623,3 +623,12 @@ body.zen #zen-hint { display: flex; }
 
 /* Raw view Ctrl+Click hint — shown in statusbar on hover over a URL word */
 .raw-link-hint { color: var(--text3); font-size: 11px; margin-left: 8px; }
+
+/* ── Images ── */
+.md-image { margin: 6px 0; }
+.md-image img {
+  display: block; max-width: 100%;
+  border-radius: 6px; border: 1px solid var(--border);
+}
+.md-img-inline { max-height: 1.4em; vertical-align: middle; border-radius: 3px; }
+.md-image-missing { font-size: 12px; color: var(--text3); font-style: italic; }
