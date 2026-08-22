@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.6.0
+**Added**
+- **Markdown images** — `.md` files now render `![alt](src)` images in the
+  Organised view. Works for both full block images on their own line and
+  smaller inline images inside normal paragraphs.
+- **Local and remote photos** — relative and absolute local paths are
+  resolved and embedded, while remote web URLs load directly. Missing
+  images show a clean placeholder instead of breaking the layout.
+
+**Changed**
+- Updated the Content-Security-Policy in `renderer.html` to allow `data:`,
+  `https:`, and `http:` image sources.
+
 ## 3.5.0
 **Added**
 - **Nested lists** — indent a line with 2 spaces (or a tab) and it shows up
