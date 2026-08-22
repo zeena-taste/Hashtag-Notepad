@@ -523,6 +523,13 @@ body.theme-light #btn-close-win:hover { background: #ba1a1a !important; color: #
 .th-spanned { text-align: center; border-bottom: 2px solid var(--accent); color: var(--accent); letter-spacing: 0.03em; }
 .td-spanned { text-align: center; font-style: italic; color: var(--text2); border-left: 2px solid var(--border2); border-right: 2px solid var(--border2); }
 
+/* ── Nested list guide ── */
+.line-item.nested { position: relative; }
+.line-item.nested::before {
+  content: ''; position: absolute; left: -11px; top: 2px; bottom: 2px;
+  border-left: 1px solid var(--border);
+}
+
 /* ── Scrollbars ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

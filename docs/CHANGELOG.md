@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.5.0
+**Added**
+- **Nested lists** — indent a line with 2 spaces (or a tab) and it shows up
+  nested under the item above it in the Organised view. Works for `- ` bullets,
+  `=> ` notes and plain lines, in both .txt and .md files.
+- **Per-tab view mode** — each tab now remembers if it was on Raw or Organised.
+  Switching tabs no longer forces all tabs into the same view.
+
 ## 3.4.0
 **Added**
 - **Spellcheck context menu** — right-clicking a misspelled word now shows live

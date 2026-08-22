@@ -331,7 +331,15 @@ function renderMdLines(lines, body) {
     const hm = line.match(/^(#{1,6})\s+(.+)$/)
     if (hm) { const d = document.createElement('div'); d.className = 'md-h' + hm[1].length; d.appendChild(renderMdInline(hm[2])); body.appendChild(d); i++; continue }
     if (line.startsWith('> ')) { const d = document.createElement('div'); d.className = 'md-blockquote'; d.appendChild(renderMdInline(line.substring(2))); body.appendChild(d); i++; continue }
-    if (line.match(/^[-*] /)) { const item = document.createElement('div'); item.className = 'line-item'; const dot = document.createElement('span'); dot.className = 'bullet-dot'; dot.textContent = '–'; const txt = document.createElement('span'); txt.appendChild(renderMdInline(line.substring(2))); item.appendChild(dot); item.appendChild(txt); body.appendChild(item); i++; continue }
+    const lm = line.match(/^([ \t]*)[-*] (.*)$/)
+if (lm) {
+  const depth = Math.min(8, Math.floor(lm[1].replace(/\t/g, '  ').length / 2))
+  const item = document.createElement('div'); item.className = 'line-item'
+  if (depth) { item.style.marginLeft = (depth * 18) + 'px'; item.classList.add('nested') }
+  const dot = document.createElement('span'); dot.className = 'bullet-dot'; dot.textContent = '–'
+  const txt = document.createElement('span'); txt.appendChild(renderMdInline(lm[2]))
+  item.appendChild(dot); item.appendChild(txt); body.appendChild(item); i++; continue
+} { const item = document.createElement('div'); item.className = 'line-item'; const dot = document.createElement('span'); dot.className = 'bullet-dot'; dot.textContent = '–'; const txt = document.createElement('span'); txt.appendChild(renderMdInline(line.substring(2))); item.appendChild(dot); item.appendChild(txt); body.appendChild(item); i++; continue }
     if (line.match(/^-{3,}$/) || line.match(/^\*{3,}$/)) { const hr = document.createElement('div'); hr.className = 'md-hr'; body.appendChild(hr); i++; continue }
     if (line.trim() === '') { const sp = document.createElement('div'); sp.style.height = '6px'; body.appendChild(sp); i++; continue }
     const d = document.createElement('div'); d.className = 'md-plain'; d.appendChild(renderMdInline(line)); body.appendChild(d); i++
@@ -477,9 +485,6 @@ function buildBody(body, s, hasChildren) {
   body.innerHTML = ''
   const lines = trimTrailingEmpty(s.lines)
   if (!lines.length) {
-    // A heading that exists purely to group nested subsections isn't an
-    // empty checklist — don't invite the user to "add items" to it, since
-    // its content lives in the child sections below, not here.
     const e = document.createElement('div')
     if (hasChildren) { e.className = 'empty-section empty-section-parent'; e.textContent = '— nested subsections below —' }
     else { e.className = 'empty-section'; e.textContent = 'no items yet — click title to add' }
@@ -508,32 +513,38 @@ function buildBody(body, s, hasChildren) {
     }
 
     const key = s.title + '::' + i, isDone = t.doneLines.has(key)
-    if (line.trim() === '') { const sp = document.createElement('div'); sp.style.height = '6px'; body.appendChild(sp); i++; continue }
+      if (line.trim() === '') { const sp = document.createElement('div'); sp.style.height = '6px'; body.appendChild(sp); i++; continue }
+      // ── nesting: 2 spaces (or a tab) per level ──
+      const ws = line.match(/^[ \t]*/)[0]
+      const depth = Math.min(8, Math.floor(ws.replace(/\t/g, '  ').length / 2))
+      const rest = line.slice(ws.length)
+      const applyNest = (el) => { if (depth) { el.style.marginLeft = (depth * 18) + 'px'; el.classList.add('nested') } }
 
-    if (line.startsWith('=> ') || line.startsWith('-> ')) {
-      const prefix = line.startsWith('=> ') ? '=> ' : '-> '
-      const rawContent = line.slice(prefix.length)
+      if (rest.startsWith('=> ') || rest.startsWith('-> ')) {
+        const prefix = rest.startsWith('=> ') ? '=> ' : '-> '
+        const rawContent = rest.slice(prefix.length)
+        const lineIdx = i
+        const item = document.createElement('div'); item.className = 'line-item arrow-line'
+        applyNest(item)
+        const txt = makeEditableSpan(rawContent, (val) => commitInlineEdit(s.title, lineIdx, ws + prefix + val))
+        item.appendChild(txt); body.appendChild(item); i++; continue
+      }
+      if (rest.startsWith('- ')) {
+        const rawContent = rest.slice(2)
+        const lineIdx = i
+        const item = document.createElement('div'); item.className = 'line-item' + (isDone ? ' done' : '')
+        applyNest(item)
+        const chk = document.createElement('span'); chk.className = 'check'; chk.textContent = isDone ? '✓' : ''
+        chk.onclick = e => { e.stopPropagation(); toggleDone(key) }
+        const txt = makeEditableSpan(rawContent, (val) => commitInlineEdit(s.title, lineIdx, ws + '- ' + val))
+        item.appendChild(chk); item.appendChild(txt); body.appendChild(item); i++; continue
+      }
+      // Plain line
       const lineIdx = i
-      const item = document.createElement('div'); item.className = 'line-item arrow-line'
-      const txt = makeEditableSpan(rawContent, (val) => commitInlineEdit(s.title, lineIdx, prefix + val))
-      item.appendChild(txt); body.appendChild(item); i++; continue
-    }
-
-    if (line.startsWith('- ')) {
-      const rawContent = line.slice(2)
-      const lineIdx = i
-      const item = document.createElement('div'); item.className = 'line-item' + (isDone ? ' done' : '')
-      const chk = document.createElement('span'); chk.className = 'check'; chk.textContent = isDone ? '✓' : ''
-      chk.onclick = e => { e.stopPropagation(); toggleDone(key) }
-      const txt = makeEditableSpan(rawContent, (val) => commitInlineEdit(s.title, lineIdx, '- ' + val))
-      item.appendChild(chk); item.appendChild(txt); body.appendChild(item); i++; continue
-    }
-
-    // Plain line
-    const lineIdx = i
-    const item = document.createElement('div'); item.className = 'line-item'
-    const txt = makeEditableSpan(line, (val) => commitInlineEdit(s.title, lineIdx, val))
-    item.appendChild(txt); body.appendChild(item); i++
+      const item = document.createElement('div'); item.className = 'line-item'
+      applyNest(item)
+      const txt = makeEditableSpan(rest, (val) => commitInlineEdit(s.title, lineIdx, ws + val))
+ item.appendChild(txt); body.appendChild(item); i++
   }
   if (inCode) { const pre = document.createElement('div'); pre.className = 'md-code-block'; pre.textContent = codeLines.join('\n'); body.appendChild(pre) }
 }
@@ -665,10 +676,12 @@ function commitActiveInlineEdit() {
 
 function switchView(view) {
   commitActiveInlineEdit()
+  const t = tabsMod.activeTab()
+  if (t) t.view = view
   state.currentView = view
   document.getElementById('btn-raw').classList.toggle('active', view === 'raw')
   document.getElementById('btn-organised').classList.toggle('active', view === 'organised')
-  state.tabs.forEach(t => t.textareaEl.classList.toggle('hidden', view !== 'raw' || t.id !== state.activeTabId))
+  state.tabs.forEach(x => x.textareaEl.classList.toggle('hidden', view !== 'raw' || x.id !== state.activeTabId))
   dom.organisedView.classList.toggle('hidden', view !== 'organised')
   dom.fmtToolbar.classList.toggle('hidden', view !== 'organised')
   if (view === 'organised') renderOrganised()

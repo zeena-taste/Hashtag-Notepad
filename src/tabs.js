@@ -1,18 +1,3 @@
-// tabs.js — tab lifecycle: newTab, switchTab, closeTab, updateTabLabel,
-// and the save-before-close prompt flow. Imports state + dom directly;
-// reaches into views/ui/file-ops for the render + save calls a tab
-// action needs to trigger.
-//
-// NOTE on the circular requires below: tabs.js, views.js, ui.js and
-// file-ops.js all call into each other (a tab switch re-renders the
-// sidebar, a save happens as part of closing a tab, etc.) — that's
-// inherent to how this app's features are wired together, not a
-// mistake. Node handles this fine as long as every module *adds*
-// properties to `module.exports` one at a time (`module.exports.foo =
-// foo`) instead of replacing it wholesale (`module.exports = {...}`).
-// Whichever module is require()'d first in a cycle still gets a live
-// reference to the same object the others fill in — see the bottom of
-// this file.
 const path = require('path')
 const { ipcRenderer: ipc } = require('electron')
 const state = require('./state')
@@ -75,6 +60,7 @@ function newTab(filePath = null, content = '', activate = true) {
   const tab = {
     id, filePath, isMd: filePath ? filePath.toLowerCase().endsWith('.md') : false,
     textareaEl: ta, tabEl, isModified: false,
+    view: 'raw',
     doneLines: new Set(), sectionOrder: [], collapsedSections: new Set()
   }
   state.tabs.push(tab)
@@ -95,16 +81,13 @@ function switchTab(id) {
   if (!t) return
   viewsMod.commitActiveInlineEdit()
   state.activeTabId = id
-  state.tabs.forEach(x => {
-    x.tabEl.classList.toggle('active', x.id === id)
-    x.textareaEl.classList.toggle('hidden', x.id !== id || state.currentView !== 'raw')
-  })
+  state.tabs.forEach(x => x.tabEl.classList.toggle('active', x.id === id))
+  viewsMod.switchView(t.view || 'raw')
   uiMod.updateFileLabel(t.filePath)
   updateWindowTitle()
   uiMod.renderSidebar()
   uiMod.updateStatus()
   uiMod.refreshStartPage()
-  if (state.currentView === 'organised') viewsMod.renderOrganised()
   if (!dom.findBar.classList.contains('hidden')) uiMod.runFind()
 }
 
