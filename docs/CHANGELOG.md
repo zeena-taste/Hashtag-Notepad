@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.6.1
+**Fixed**
+- **Heading formatting** — `**bold**`, `*italic*`, `__underline__`, code and
+  links now render properly in section headings (both .txt and .md) instead
+  of showing the raw markers.
+
 ## 3.6.0
 **Added**
 - **Markdown images** — `.md` files now render `![alt](src)` images in the
