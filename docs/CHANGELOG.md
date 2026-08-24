@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.6.2
+**Fixed**
+- **section editing** - when you click a section title it toggles into raw mode to be able to edit the section
+
 ## 3.6.1
 **Fixed**
 - **Heading formatting** — `**bold**`, `*italic*`, `__underline__`, code and
