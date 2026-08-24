@@ -46,7 +46,7 @@ function renderSidebar() {
     const depth = Math.max(0, (s.level || 1) - 1)
     const cc = t.isMd ? headingColorClass(s.level) : ''
     const tagHtml = t.isMd ? `<span class="sl-tag">${s.tag}</span>` : ''
-    el.innerHTML = `<span style="width:${depth * 6}px;display:inline-block;flex-shrink:0"></span>${tagHtml}<span class="sl-label ${cc}">${escapeHtml(s.title)}</span>`
+    el.innerHTML = `<span style="width:${depth * 6}px;display:inline-block;flex-shrink:0"></span>${tagHtml}<span class="sl-label ${cc}">${escapeHtml(s.title.replace(/(\*\*|__|\*|`)/g, ''))}</span>`
     el.onclick = () => jumpToSection(s.title)
     dom.sectionList.appendChild(el)
   })

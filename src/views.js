@@ -462,13 +462,13 @@ function renderOrganised() {
     leftZone.addEventListener('click', e => { e.stopPropagation(); toggleSection(s.title) })
 
     // TITLE zone: only the text → opens section edit on click
-    const titleZone = document.createElement('div')
-    titleZone.className = 'section-head-title-zone'
-    const titleSpan = document.createElement('span')
-    titleSpan.className = 'sec-title ' + cc
-    titleSpan.textContent = s.title
-    titleZone.appendChild(titleSpan)
-    titleZone.addEventListener('click', e => { e.stopPropagation(); openSectionEdit(block, s) })
+  const titleZone = document.createElement('div')
+  titleZone.className = 'section-head-title-zone'
+  const titleSpan = document.createElement('span')
+  titleSpan.className = 'sec-title ' + cc
+  const renderedTitle = renderInlineFormatting(s.title)
+  while (renderedTitle.firstChild) titleSpan.appendChild(renderedTitle.firstChild)
+  titleZone.appendChild(titleSpan)
 
     // RIGHT zone: tag + optional badge → collapses/expands
     const rightZone = document.createElement('div')
