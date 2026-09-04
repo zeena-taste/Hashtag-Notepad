@@ -22,12 +22,7 @@ Unsigned builds will show an "unidentified developer" (macOS) or SmartScreen (Wi
 
 ## What's new in v3
 
-**Bug fixes**
-- Fixed: files with Windows (CRLF) line endings no longer leak stray `\r` characters into headings, bullets, and table cells
-- Fixed: `Save As` now correctly re-detects `.txt` vs `.md` mode for the new file, instead of keeping whatever mode the previous file was in
-- Fixed: editing via the Organised view (tables, section edits, drag-reorder, find & replace) no longer wipes the Raw view's undo/redo history
-
-**New features**
+**features**
 - **Tabs** — Open (Ctrl+O) now opens files as tabs in the current window instead of always spawning a new OS window. `Ctrl+T` new tab, `Ctrl+W` close tab, `Ctrl+Tab` / `Ctrl+Shift+Tab` to switch. Use **New Window** (Ctrl+Shift+N) when you actually want a separate window (e.g. for side-by-side monitors)
 - **Find & Replace** — `Ctrl+F`
 - **Word / character count** — in the status bar, next to the existing line/section count
