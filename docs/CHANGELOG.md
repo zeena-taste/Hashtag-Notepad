@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.6.3
+**Fixed**
+- linux `.AppImage` was rendering black screen in most distros
+
 ## 3.6.2
 **Fixed**
 - **section editing** - when you click a section title it toggles into raw mode to be able to edit the section

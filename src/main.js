@@ -1,5 +1,4 @@
-// Add Menu and MenuItem to the destructuring
-const { app, BrowserWindow, dialog, ipcMain, nativeTheme, Menu, MenuItem } = require('electron')
+const { app, BrowserWindow, dialog, ipcMain, nativeTheme, Menu, MenuItem, nativeImage } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -8,9 +7,20 @@ const { discoverThemePlugins } = require('./plugins')
 
 app.setAppUserModelId('com.hashtagnotepad.app')
 
+const iconFile = process.platform === 'win32' ? 'icon.ico' : 'icon.png'
 const iconPath = app.isPackaged
-  ? path.join(process.resourcesPath, 'icon.ico')
-  : path.join(__dirname, '..', 'assets', 'icon.ico')
+  ? path.join(process.resourcesPath, iconFile)
+  : path.join(__dirname, '..', 'assets', iconFile)
+
+let appIcon = null
+try {
+  const img = nativeImage.createFromPath(iconPath)
+  if (!img.isEmpty()) appIcon = img
+  else console.warn('Icon loaded but empty, continuing without it:', iconPath)
+} catch (e) {
+  console.warn('Icon failed to load, continuing without it:', e)
+}
+
 const windows = new Set()
 const bundledPluginsDir = path.join(__dirname, '..', 'plugins')
 
@@ -30,7 +40,7 @@ function createWindow(filePath = null, content = null) {
     minHeight: 400,
     frame: false,
     backgroundColor: '#1a1a1a',
-    icon: iconPath,
+    ...(appIcon ? { icon: appIcon } : {}),
     title: filePath ? path.basename(filePath) + ' — Hashtag Notepad' : 'Hashtag Notepad',
     webPreferences: {
       nodeIntegration: true,
@@ -39,7 +49,13 @@ function createWindow(filePath = null, content = null) {
     }
   })
 
-  win.setIcon(iconPath)
+  if (appIcon) {
+    try {
+      win.setIcon(appIcon)
+    } catch (e) {
+      console.warn('setIcon failed, continuing without it:', e)
+    }
+  }
   win._isModified = false
   windows.add(win)
   win.loadFile('src/renderer.html')
