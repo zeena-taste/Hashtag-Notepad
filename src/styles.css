@@ -284,12 +284,15 @@ body.theme-light #btn-close-win:hover { background: #ba1a1a !important; color: #
 #editor-area { flex: 1; position: relative; overflow: hidden; min-width: 0; }
 #editor-textareas { position: absolute; inset: 0; }
 .raw-editor {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  background: var(--bg); color: var(--text);
-  border: none; outline: none; resize: none;
-  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
-  font-size: 13px; line-height: 22px; padding: 16px;
-  caret-color: var(--accent);
+position: absolute; inset: 0; width: 100%; height: 100%;
+background: var(--bg); color: var(--text);
+border: none; outline: none; resize: none;
+font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+font-size: 13px; line-height: 22px; padding: 16px;
+caret-color: var(--accent);
+white-space: pre-wrap;
+word-break: break-all;
+overflow-wrap: break-word;
 }
 .raw-editor::placeholder { color: var(--text3); white-space: pre-wrap; }
 
@@ -381,8 +384,12 @@ body.theme-light #btn-close-win:hover { background: #ba1a1a !important; color: #
 .fmt-italic { font-style: italic; color: var(--md-italic); }
 .fmt-underline { text-decoration: underline; }
 .md-inline-code {
-  font-family: 'JetBrains Mono', 'Cascadia Code', monospace; background: var(--bg3);
-  color: var(--md-code); padding: 0 4px; border-radius: 4px; font-size: 12px;
+font-family: 'JetBrains Mono', 'Cascadia Code', monospace; background: var(--bg3);
+color: var(--md-code); padding: 0 4px; border-radius: 4px; font-size: 12px;
+white-space: pre-wrap;
+word-break: break-all;
+overflow-wrap: break-word;
+max-width: 100%;
 }
 
 /* ── MD elements ── */
@@ -394,10 +401,12 @@ body.theme-light #btn-close-win:hover { background: #ba1a1a !important; color: #
 .md-h6 { font-size: 11.5px; font-weight: 600; color: var(--md-h6); margin: 4px 0 2px; }
 .md-blockquote { border-left: 3px solid var(--md-quote); padding: 2px 0 2px 10px; color: var(--md-quote); font-style: italic; margin: 3px 0; }
 .md-code-block {
-  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
-  font-size: 13px; line-height: 22px; background: var(--bg3); color: var(--md-code);
-  padding: 8px 10px; border-radius: 6px; margin: 4px 0; white-space: pre;
-  overflow-x: auto; border: 1px solid var(--border);
+font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+font-size: 13px; line-height: 22px; background: var(--bg3); color: var(--md-code);
+padding: 8px 10px; border-radius: 6px; margin: 4px 0; white-space: pre;
+overflow-x: auto; border: 1px solid var(--border);
+max-width: 100%;
+box-sizing: border-box;
 }
 .md-hr { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
 .md-plain { font-size: 13px; line-height: 1.65; padding: 1px 0; }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.6.4
+**Fixed**
+- embeding md code blocks works now
+
 ## 3.6.3
 **Fixed**
 - linux `.AppImage` was rendering black screen in most distros
