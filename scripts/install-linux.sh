@@ -12,7 +12,7 @@ DESKTOP_DIR="$HOME/.local/share/applications"
 BIN_DIR="$HOME/.local/bin"
 
 # Find the AppImage in the current directory
-APPIMAGE_FILE=$(ls -1 *.AppImage 2>/dev/null | grep -i hashtag | head -n 1)
+APPIMAGE_FILE=$(ls -1 *.appimage 2>/dev/null | grep -i hashtag | head -n 1)
 
 if [ -z "$APPIMAGE_FILE" ]; then
     echo " Error: Could not find a Hashtag Notepad .AppImage in this directory."
