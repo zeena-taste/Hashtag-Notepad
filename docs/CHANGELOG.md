@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.7.0
+
+**Added**
+- **JavaScript Plugin Connectors:** Evolved the plugin system from CSS-only themes to full JavaScript connectors. Plugins can now use the new `HashtagNotepadAPI` to interact with the workspace, manipulate the UI (add toolbar buttons, toasts), listen to app events, and register MCP (Model Context Protocol) tools for future AI integration.
+- **Linux Desktop Integration Script:** Added `scripts/install-linux.sh` to seamlessly integrate the AppImage into Linux desktop environments (KDE, GNOME, etc.) without requiring root/sudo privileges. It installs the app icon, creates the `.desktop` entry, and adds a terminal symlink.
+- **Linux Installation Docs:** Added comprehensive Linux installation instructions to the `README.md`, highlighting the recommended `.deb` package and the new AppImage integration script.
+- **Updated Plugin Documentation:** Expanded `docs/PLUGINS.md` to document the new Connector API, manifest structure, security model, and examples.
+
+**Fixed**
+- **Linux AppImage Icon & Taskbar:** Fixed the missing application icon and improper taskbar integration on Linux (specifically KDE Plasma). Updated `package.json` to include `StartupWMClass` and explicitly bundle the `assets` folder, ensuring the icon displays correctly in the app menu and taskbar.
+
 ## 3.6.4
 **Fixed**
 - embeding md code blocks works now

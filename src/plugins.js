@@ -1,13 +1,3 @@
-// Minimal theme-plugin loader.
-//
-// A theme plugin is just a folder containing:
-//   plugin.json   { "id": "nord", "name": "Nord", "type": "theme", "css": "theme.css" }
-//   theme.css     body.theme-nord { --bg: #2e3440; ... }
-//
-// Deliberately CSS-only (no JS execution) for v3 — this keeps the plugin
-// surface trivially safe to load from a community folder while still letting
-// anyone ship a new color scheme without touching the app's source.
-// See PLUGINS.md for the full list of variables a theme can define.
 const fs = require('fs')
 const path = require('path')
 
@@ -24,14 +14,37 @@ function readPluginDir(dir) {
     if (!fs.existsSync(manifestPath)) continue
     try {
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
-      if (manifest.type !== 'theme') continue
+      const type = manifest.type || 'theme'
+      // Allow both themes and connectors
+      if (type !== 'theme' && type !== 'connector') continue
+
+      let css = null
       const cssFile = manifest.css || 'theme.css'
       const cssPath = path.join(pluginDir, cssFile)
-      if (!fs.existsSync(cssPath)) continue
-      const css = fs.readFileSync(cssPath, 'utf-8')
-      const id = String(manifest.id || entry.name).replace(/[^a-z0-9\-_]/gi, '')
+      if (fs.existsSync(cssPath)) {
+          css = fs.readFileSync(cssPath, 'utf-8')
+      }
+
+      // NEW: Read the JS entry point if it's a connector
+      let js = null
+      if (type === 'connector' && manifest.main) {
+          const jsPath = path.join(pluginDir, manifest.main)
+          if (fs.existsSync(jsPath)) {
+              try {
+                  js = fs.readFileSync(jsPath, 'utf-8')
+              } catch (e) {
+                  console.error('[hashtag-notepad] failed to read JS for plugin', pluginDir, e.message)
+              }
+          }
+      }
+
+      // Must have at least CSS or JS to be valid
+      if (!css && !js) continue
+
+      const id = String(manifest.id || entry.name).replace(/[^a-z0-9-_]/gi, '')
       if (!id) continue
-      found.push({ id, name: manifest.name || id, author: manifest.author || null, css })
+
+      found.push({ id, name: manifest.name || id, author: manifest.author || null, type, css, js })
     } catch (e) {
       console.error('[hashtag-notepad] failed to load plugin at', pluginDir, e.message)
     }

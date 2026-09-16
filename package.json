@@ -1,6 +1,6 @@
 {
   "name": "HashtagNotepad",
-  "version": "3.6.4",
+  "version": "3.7.0",
   "description": "A lightweight notepad with collapsible #hashtag sections",
   "author": {
     "name": "Hashtag Notepad",
@@ -86,23 +86,20 @@
     },
     "linux": {
       "target": [
-        {
-          "target": "AppImage",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "deb",
-          "arch": [
-            "x64"
-          ]
-        }
+        "AppImage",
+        "deb"
       ],
       "icon": "./assets/icon.png",
       "category": "Utility",
       "executableName": "hashtag-notepad",
-      "synopsis": "A lightweight notepad with collapsible #hashtag sections"
+      "synopsis": "A lightweight notepad with collapsible #hashtag sections",
+      "desktop": {
+        "Name": "Hashtag Notepad",
+        "Comment": "A lightweight notepad with collapsible #hashtag sections",
+        "Categories": "Utility;TextEditor;",
+        "Keywords": "notes;text;markdown;hashtags;",
+        "StartupWMClass": "hashtag-notepad"
+      }
     },
     "fileAssociations": [
       {
@@ -122,7 +119,8 @@
     ],
     "files": [
       "src/**/*",
-      "plugins/**/*"
+      "plugins/**/*",
+      "assets/**/*"
     ]
   },
   "devDependencies": {

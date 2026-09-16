@@ -1,139 +1,332 @@
-# Creating a theme plugin
+# Creating a Plugin
 
-Hashtag Notepad supports a small, deliberately safe plugin system: **theme plugins**. A theme plugin is just a folder with two files — no JavaScript execution, no arbitrary code, just CSS custom properties. That's what makes it safe to load from a random folder someone downloaded off GitHub.
+Hashtag Notepad supports a flexible plugin system with two types of plugins:
 
-## Folder layout
+1. **Theme Plugins** (CSS-only) — color schemes, fonts, visual tweaks
+2. **Connector Plugins** (JavaScript + CSS) — full-featured extensions with API access, custom UI, and AI/MCP integration
 
-```
+## Folder Layout
+
+```text
 plugins/
-  my-theme/
+  my-plugin/
     plugin.json
-    theme.css
+    theme.css        (optional, for themes or visual tweaks)
+    main.js          (required for connectors)
 ```
 
-**`plugin.json`**
+---
+
+## plugin.json
+
 ```json
 {
-  "id": "my-theme",
-  "name": "My Theme",
-  "type": "theme",
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "type": "connector",
+  "main": "main.js",
   "css": "theme.css",
-  "author": "your name (optional)"
+  "author": "your name (optional)",
+  "version": "1.0.0"
 }
 ```
 
-**`theme.css`** — define every variable below inside a single selector, `body.theme-<id>` (id must match `plugin.json`'s `id`):
+### Fields
+
+* `id` — unique identifier (lowercase, alphanumeric + dashes/underscores)
+* `name` — display name shown in the UI
+* `type` — either `"theme"` or `"connector"`
+* `main` — JavaScript entry point (required for connectors)
+* `css` — CSS file (optional, can be used by both types)
+* `author` — your name/handle (optional)
+* `version` — plugin version (optional)
+
+---
+
+## Theme Plugins (CSS-only)
+
+A theme plugin defines CSS custom properties inside `body.theme-<id>`:
 
 ```css
 body.theme-my-theme {
-  --bg: #202020; --bg2: #262626; --bg3: #2c2c2c; --bg4: #333333;
-  --border: #3a3a3a; --border2: #484848;
-  --text: #e0e0e0; --text2: #999999; --text3: #5a5a5a;
-  --accent: #e07b53; --accent-bg: #3a2a20; --accent-text: #ffb08a;
-  --titlebar: #161616; --statusbar-bg: #4a3226; --statusbar-text: #e0a888;
-  --done-text: #666666; --check-border: #484848; --check-done-bg: #333333;
-  --drag-handle: #484848;
-  --section-head: #262626; --section-head-hover: #2c2c2c; --section-body: #202020;
-  --arrow-bg: #2a2018; --arrow-border: #6b4a2f; --arrow-text: #d9a067;
-  --md-h1: #e07b53; --md-h2: #d9a067; --md-h3: #b0c98a;
-  --md-h4: #8fb0a0; --md-h5: #7a9bb0; --md-h6: #6a7a90;
-  --md-code: #d98c5f; --md-quote: #b0c98a; --md-bold: #d9a067; --md-italic: #8fb0a0;
-  --inline-edit-border: #e07b53; --inline-edit-bg: #161616; --fmt-bar: #161616;
+  --bg: #202020;
+  --bg2: #262626;
+  --bg3: #2c2c2c;
+  --bg4: #333333;
+
+  --border: #3a3a3a;
+  --border2: #484848;
+
+  --text: #e0e0e0;
+  --text2: #999999;
+  --text3: #5a5a5a;
+
+  --accent: #e07b53;
+  --accent-bg: #3a2a20;
+  --accent-text: #ffb08a;
+
+  /* ... see ARCHITECTURE.md for full variable list ... */
 }
 ```
 
-You don't have to hand-pick every value from scratch — copying `plugins/nord/theme.css` or `plugins/solarized-dark/theme.css` as a starting point and adjusting the hex values is the fastest way to get something working.
+See `plugins/nord/theme.css` or `plugins/solarized-dark/theme.css` for complete examples.
 
-## Where to put it
+---
 
-- **Bundled with the app**: drop your folder in the project's own `plugins/` directory before building — it ships with the app for everyone.
-- **Installed by a user**: drop the folder into the app's user plugins directory instead, and it'll be picked up on next launch without rebuilding anything:
-  - Windows: `%APPDATA%/HashtagNotepad/plugins/`
-  - macOS: `~/Library/Application Support/HashtagNotepad/plugins/`
-  - Linux: `~/.config/HashtagNotepad/plugins/`
+## Connector Plugins (JavaScript + API)
 
-A user-installed plugin with the same `id` as a bundled one overrides it, so you can also use this to tweak a built-in theme without touching the app itself.
+Connector plugins can add buttons, commands, AI tools, and custom functionality using the **HashtagNotepadAPI**.
 
-## What's not supported (yet)
+### main.js Structure
 
-This is intentionally CSS-only for now — no JS panels, no custom commands, no new file-format support. If the project grows a community around it, a richer plugin API (with proper permissions/sandboxing) would be the natural next step, but that's a bigger undertaking than a first version should take on.
+```javascript
+module.exports = {
+  onload: function(api) {
+    // Called when the plugin loads
+    // Register buttons, commands, event listeners here
+  },
 
-## 10-minute walkthrough: build your first theme
-
-This is a copy-paste path from zero to a theme you can load and PR.
-
-### 1. Copy a sample
-
-From the repo root:
-
-```bash
-cp -R plugins/nord plugins/ocean-breeze
+  onunload: function() {
+    // Called when the plugin is disabled/unloaded
+    // Clean up any resources, remove UI elements
+  }
+}
 ```
 
-### 2. Rename the plugin identity
+### The HashtagNotepadAPI
 
-Edit `plugins/ocean-breeze/plugin.json`:
+The `api` object passed to `onload()` provides safe access to the app.
+
+---
+
+### `api.workspace` — Editor Access
+
+```javascript
+// Get current note text
+const text = api.workspace.getActiveText()
+
+// Set current note text
+api.workspace.setActiveText('new content')
+
+// Get active tab info
+const tab = api.workspace.getActiveTab()
+```
+
+---
+
+### `api.ui` — UI Manipulation
+
+```javascript
+// Add a toolbar button
+const btn = api.ui.addToolbarButton('🚀', 'My Action', () => {
+  console.log('Button clicked!')
+})
+
+// Show a toast notification
+api.ui.showToast('Operation completed!')
+```
+
+---
+
+### `api.events` — Event System
+
+```javascript
+// Listen for events
+api.events.on('text-changed', (newText) => {
+  console.log('Text updated:', newText)
+})
+
+// Emit custom events (for inter-plugin communication)
+api.events.emit('my-plugin-event', { data: 'value' })
+
+// Remove a listener
+api.events.off('text-changed', callback)
+```
+
+---
+
+### `api.mcp` — AI/MCP Integration
+
+Register tools that AI assistants such as Claude or GPT can use:
+
+```javascript
+api.mcp.registerTool(
+  'get_word_count',
+  'Returns the word count of the active note',
+  async () => {
+    const text = api.workspace.getActiveText()
+    return text.trim() ? text.trim().split(/\s+/).length : 0
+  }
+)
+```
+
+This makes the tool available to MCP-compatible AI clients.
+
+---
+
+## Example: Word Count Connector
+
+### `plugins/word-count/plugin.json`
 
 ```json
 {
-  "id": "ocean-breeze",
-  "name": "Ocean Breeze",
-  "type": "theme",
-  "css": "theme.css",
-  "author": "your-github-handle"
+  "id": "word-count",
+  "name": "Word Count Widget",
+  "type": "connector",
+  "main": "main.js",
+  "author": "You"
 }
 ```
 
-The `id` must be unique and must match the CSS selector in the next step.
+### `plugins/word-count/main.js`
 
-### 3. Retarget the CSS selector
+```javascript
+module.exports = {
+  onload: function(api) {
+    console.log('[Word Count] Plugin loaded')
 
-Open `plugins/ocean-breeze/theme.css`. Change only the selector first:
+    // Add button to toolbar
+    api.ui.addToolbarButton('📊', 'Count Words', () => {
+      const text = api.workspace.getActiveText()
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0
+      const chars = text.length
 
-```css
-/* was: body.theme-nord { ... } */
-body.theme-ocean-breeze {
-  /* keep the variables; tweak hex values next */
+      api.ui.showToast(`Words: ${words} | Characters: ${chars}`)
+    })
+
+    // Register MCP tool for AI
+    api.mcp.registerTool(
+      'count_words',
+      'Count words and characters in the current note',
+      () => {
+        const text = api.workspace.getActiveText()
+
+        return {
+          words: text.trim() ? text.trim().split(/\s+/).length : 0,
+          characters: text.length
+        }
+      }
+    )
+  },
+
+  onunload: function() {
+    console.log('[Word Count] Plugin unloaded')
+  }
 }
 ```
 
-### 4. Change a few colors you can see immediately
+---
 
-Pick high-signal tokens so you know the theme loaded:
+## Example: AI Hashtag Suggestor
 
-| Variable | What it paints |
-|----------|----------------|
-| `--bg` | Main editor background |
-| `--text` | Primary text |
-| `--accent` | Selection / focus accents |
-| `--titlebar` | Window chrome bar |
-| `--statusbar-bg` / `--statusbar-text` | Status bar |
+### `plugins/ai-hashtags/plugin.json`
 
-Example starter palette (edit freely):
-
-```css
-body.theme-ocean-breeze {
-  --bg: #0b1e2d; --bg2: #123047; --bg3: #1a3d58; --bg4: #24506e;
-  --border: #2a5574; --border2: #35688a;
-  --text: #e8f1f8; --text2: #9db7c9; --text3: #6d8aa0;
-  --accent: #3dbbdb; --accent-bg: #16394a; --accent-text: #8fd9ec;
-  --titlebar: #081624; --statusbar-bg: #1f6f8b; --statusbar-text: #e8f1f8;
-  /* leave the rest from Nord until you want to fine-tune */
+```json
+{
+  "id": "ai-hashtags",
+  "name": "AI Hashtag Generator",
+  "type": "connector",
+  "main": "main.js",
+  "author": "You"
 }
 ```
 
-### 5. Run the app and switch themes
+### `plugins/ai-hashtags/main.js`
 
-```bash
-npm install
-npm start
+```javascript
+module.exports = {
+  onload: function(api) {
+    api.ui.addToolbarButton('🏷️', 'Suggest Hashtags', async () => {
+      const text = api.workspace.getActiveText()
+
+      // Call your AI API here (OpenAI, Anthropic, etc.)
+      // For now, just extract words as example hashtags
+      const words = text.match(/\b\w+\b/g) || []
+
+      const hashtags = [...new Set(words)]
+        .filter(w => w.length > 3)
+        .slice(0, 10)
+        .map(w => `#${w.toLowerCase()}`)
+        .join(' ')
+
+      // Append hashtags to current note
+      const newText = text + '\n\n' + hashtags
+
+      api.workspace.setActiveText(newText)
+      api.ui.showToast('Hashtags added!')
+    })
+  }
+}
 ```
 
-Open **Preferences / theme list** (or the theme picker in the UI) and choose **Ocean Breeze**. If the chrome and background shift to your blues, the plugin was discovered correctly.
+---
 
-### 6. Ship it
+## Where to Put Plugins
 
-- For everyone: leave the folder under `plugins/` and open a PR.
-- For only your machine: copy the folder into the user plugins path listed above.
+### Bundled with the App
 
-For deeper layout/DOM constraints beyond colors, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+Drop your plugin folder in the project's `plugins/` directory before building — it ships with the app for everyone.
+
+### Installed by a User
+
+Drop the folder into the app's user plugins directory. It will be picked up on the next launch:
+
+* **Windows:** `%APPDATA%/HashtagNotepad/plugins/`
+* **macOS:** `~/Library/Application Support/HashtagNotepad/plugins/`
+* **Linux:** `~/.config/HashtagNotepad/plugins/`
+
+> User-installed plugins override bundled ones with the same `id`, so you can tweak built-in plugins without rebuilding.
+
+---
+
+## Security Notes
+
+Connector plugins run in the renderer process with access to:
+
+* The DOM and UI
+* The HashtagNotepadAPI
+* Browser APIs such as `localStorage`
+
+### Plugins CANNOT
+
+* Access Node.js modules directly (`require()` is blocked)
+* Access the filesystem directly
+* Execute arbitrary system commands
+
+This keeps plugins safe to install from the community while still being powerful.
+
+---
+
+## Debugging Plugins
+
+Open DevTools:
+
+* **Windows/Linux:** `Ctrl+Shift+I`
+* **macOS:** `Cmd+Option+I`
+
+Then check the console for:
+
+```text
+[Plugin] Loaded connector: <name>
+```
+
+Successful loads will show the message above.
+
+For errors:
+
+```text
+[Plugin] Failed to load connector <name>: <error>
+```
+
+You can also check for plugin-specific `console.log()` messages.
+
+---
+
+## Publishing Plugins
+
+1. **Test locally** — drop the plugin into your user plugins folder.
+2. **Create a GitHub repo** — share your plugin folder.
+3. **Submit a PR** — optionally bundle the plugin with the app.
+4. **Document it** — add the plugin to the community plugin list.
+
+For deeper layout and DOM constraints beyond CSS, see `ARCHITECTURE.md`.

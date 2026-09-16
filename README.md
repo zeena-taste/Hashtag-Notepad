@@ -20,6 +20,59 @@ Unsigned builds will show an "unidentified developer" (macOS) or SmartScreen (Wi
 
 ---
 
+## Linux Installation
+
+Hashtag Notepad provides both an **AppImage** (universal) and a **`.deb`** package for Linux.
+
+### Option 1: The `.deb` Package (Recommended)
+
+The `.deb` package is the easiest method because it automatically handles desktop integration, file associations, and the application icon for you.
+
+* **Debian / Ubuntu / Pop!_OS:** Double-click the `.deb` file to install via your software center, or run:
+
+  ```bash
+  sudo apt install ./Hashtag\ Notepad-*.deb
+  ```
+
+* **Arch Linux / Manjaro:** You can install the `.deb` file directly using `pacman` or an AUR helper like `yay`:
+
+  ```bash
+  sudo pacman -U Hashtag\ Notepad-*.deb
+  ```
+
+  Or:
+
+  ```bash
+  yay -U Hashtag\ Notepad-*.deb
+  ```
+
+### Option 2: The AppImage (Universal)
+
+AppImages are portable and don't require root privileges to run, but they do not automatically integrate with your desktop environment (menu shortcuts, icons).
+
+**1. Make the AppImage executable**
+
+Right-click the file, go to **Properties → Permissions**, and check **Allow executing file as program**.
+
+Or run:
+
+```bash
+chmod +x Hashtag\ Notepad-*.AppImage
+```
+
+**2. (Optional) Integrate with your desktop menu and icon theme**
+
+We provide a helper script to automatically place the AppImage in your local apps folder, install the icon, and create the `.desktop` entry for your application menu.
+
+Download [`install-linux.sh`](scripts/install-linux.sh) into the **same folder** as the downloaded AppImage, then run:
+
+```bash
+chmod +x install-linux.sh
+./install-linux.sh
+```
+
+> **Note:** This installs the app to `~/.local/share/hashtag-notepad` and does not require `sudo` or root privileges. To uninstall, simply run the commands printed at the end of the installation.
+
 ## What's new in v3
 
 **features**

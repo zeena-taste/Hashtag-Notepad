@@ -91,17 +91,133 @@ async function init() {
     state.recentFilesCache = prefs.recentFiles || []
   } catch { /* prefs unavailable, fall back to defaults */ }
   try {
-    state.pluginThemes = await ipc.invoke('get-theme-plugins')
+    const allPlugins = await ipc.invoke('get-plugins')
+    // 1. Handle CSS Themes (existing behavior)
+    state.pluginThemes = allPlugins.filter(p => p.css)
     if (state.pluginThemes.length) {
-      const style = document.createElement('style')
-      style.id = 'plugin-theme-styles'
-      style.textContent = state.pluginThemes.map(p => p.css).join('\n\n')
-      document.head.appendChild(style)
+        const style = document.createElement('style')
+        style.id = 'plugin-theme-styles'
+        style.textContent = state.pluginThemes.map(p => p.css).join('\n\n')
+        document.head.appendChild(style)
     }
-  } catch (e) {
-    console.error('[hashtag-notepad] failed to load theme plugins:', e)
+
+    // 2. Handle JS Connectors (NEW)
+    const connectors = allPlugins.filter(p => p.type === 'connector' && p.js)
+    if (connectors.length) {
+        
+        // ── The Obsidian-style API we expose to plugins ──
+        const HashtagNotepadAPI = {
+            workspace: {
+                getActiveText: () => {
+                    const tab = state.tabs.find(t => t.id === state.activeTabId)
+                    return tab ? tab.content : ''
+                },
+                setActiveText: (text) => {
+                    const tab = state.tabs.find(t => t.id === state.activeTabId)
+                    if (tab) {
+                        tab.content = text
+                        // Update the actual textarea if it's visible
+                        const ta = document.getElementById(`editor-${tab.id}`)
+                        if (ta) {
+                            const { setEditorValue } = require('./utils')
+                            setEditorValue(ta, text)
+                        }
+                        // Trigger UI updates (status bar, etc)
+                        uiMod.updateStatus()
+                    }
+                },
+                getActiveTab: () => state.tabs.find(t => t.id === state.activeTabId)
+            },
+            ui: {
+                addToolbarButton: (icon, tooltip, onClick) => {
+                    const btn = document.createElement('button')
+                    btn.className = 'tb-btn plugin-btn'
+                    btn.innerHTML = icon
+                    btn.title = tooltip
+                    btn.addEventListener('click', onClick)
+                    // Add to the right side of the toolbar
+                    document.getElementById('toolbar-right').appendChild(btn)
+                    return btn // Return it so they can remove it later if needed
+                },
+                showToast: (msg) => {
+                    // Simple toast implementation
+                    const toast = document.createElement('div')
+                    toast.style.cssText = `position:fixed; bottom:40px; left:50%; transform:translateX(-50%); background:var(--bg3); color:var(--text); padding:8px 16px; border-radius:6px; border:1px solid var(--border); z-index:999; font-size:12px; box-shadow:0 4px 12px rgba(0,0,0,0.3); transition:opacity 0.3s;`
+                    toast.textContent = msg
+                    document.body.appendChild(toast)
+                    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300) }, 3000)
+                }
+            },
+            events: {
+                _listeners: {},
+                on(event, callback) {
+                    if (!this._listeners[event]) this._listeners[event] = []
+                    this._listeners[event].push(callback)
+                },
+                off(event, callback) {
+                    if (!this._listeners[event]) return
+                    this._listeners[event] = this._listeners[event].filter(cb => cb !== callback)
+                },
+                emit(event, data) {
+                    (this._listeners[event] || []).forEach(cb => {
+                        try { cb(data) } catch(e) { console.error(`[Plugin Event Error] ${event}:`, e) }
+                    })
+                }
+            },
+            // Future-proofing for MCP / AI tools
+            mcp: {
+                _tools: [],
+                registerTool(name, description, handler) {
+                    this._tools.push({ name, description, handler })
+                    console.log(`[MCP] Registered tool: ${name}`)
+                }
+            }
+        }
+
+        // Execute each connector
+        connectors.forEach(plugin => {
+            try {
+                const pluginModule = { exports: {} }
+                
+                // Block them from requiring native Node modules (like 'fs' or 'child_process')
+                const pluginRequire = (mod) => {
+                    throw new Error(`Plugin security: Cannot require native module "${mod}". Use the HashtagNotepadAPI instead.`)
+                }
+                
+                // Execute plugin via <script> tag (allowed by 'unsafe-inline' CSP, no 'unsafe-eval' needed)
+                window.__HN_PLUGIN_API = HashtagNotepadAPI
+                window.__HN_PLUGIN_MODULE = { exports: {} }
+                window.__HN_PLUGIN_REQUIRE = (mod) => {
+                    throw new Error(`Plugin security: Cannot require native module "${mod}". Use the HashtagNotepadAPI instead.`)
+                }
+
+                const script = document.createElement('script')
+                script.textContent = `(function(){
+                    var module = window.__HN_PLUGIN_MODULE;
+                    var require = window.__HN_PLUGIN_REQUIRE;
+                    var api = window.__HN_PLUGIN_API;
+                    ${plugin.js}
+                    if (typeof module.exports.onload === 'function') {
+                        module.exports.onload(api);
+                    }
+                })()`
+                document.head.appendChild(script)
+                script.remove() // Safe: inline scripts execute synchronously on appendChild
+
+                delete window.__HN_PLUGIN_API
+                delete window.__HN_PLUGIN_MODULE
+                delete window.__HN_PLUGIN_REQUIRE
+                
+                console.log(`[Plugin] Loaded connector: ${plugin.name}`)
+            } catch (e) {
+                console.error(`[Plugin] Failed to load connector ${plugin.name}:`, e)
+            }
+        })
+    }
+} catch (e) {
+    console.error('[hashtag-notepad] failed to load plugins:', e)
     state.pluginThemes = []
-  }
+}
   uiMod.applyTheme(uiMod.effectiveTheme())
   tabsMod.newTab()
   uiMod.updateStatus()

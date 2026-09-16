@@ -1,0 +1,7 @@
+   {
+     "id": "hello-connector",
+     "name": "Hello Connector",
+     "type": "connector",
+     "main": "main.js",
+     "author": "You"
+   }

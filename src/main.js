@@ -238,8 +238,8 @@ ipcMain.handle('get-prefs', () => {
 })
 ipcMain.on('set-theme-pref', (event, themeId) => store.save({ theme: themeId }))
 
-// ── Theme plugins ────────────────────────────────────────────────────────
-ipcMain.handle('get-theme-plugins', () => discoverThemePlugins(bundledPluginsDir, userPluginsDir()))
+// ── Plugins (Themes & Connectors) ────────────────────────────────────────
+ipcMain.handle('get-plugins', () => discoverThemePlugins(bundledPluginsDir, userPluginsDir()))
 
 // ── Export ───────────────────────────────────────────────────────────────
 ipcMain.handle('export-html', async (event, { html, suggestedName }) => {
