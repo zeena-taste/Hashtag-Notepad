@@ -163,6 +163,10 @@ body.theme-light #btn-close-win:hover { background: #ba1a1a !important; color: #
   user-select: none; transition: background 0.2s ease, color 0.2s ease;
 }
 #tab-new:hover { background: var(--bg3); color: var(--text); }
+/* ── Tab Dragging States ── */
+.tab.dragging { opacity: 0.4; cursor: grabbing; }
+.tab.drag-over-left { box-shadow: inset 3px 0 0 0 var(--accent); }
+.tab.drag-over-right { box-shadow: inset -3px 0 0 0 var(--accent); }
 
 /* ── Find & Replace bar ── */
 #find-bar {

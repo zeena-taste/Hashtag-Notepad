@@ -44,6 +44,64 @@ document.addEventListener('dragover', fileOpsMod.onDragOver)
 document.addEventListener('dragleave', fileOpsMod.onDragLeave)
 document.addEventListener('drop', fileOpsMod.onDrop)
 
+// ── Tab Reordering Drag & Drop ─────────────────────────────────────────────
+let draggedTabId = null
+
+dom.tabList.addEventListener('dragstart', (e) => {
+    const tab = e.target.closest('.tab')
+    if (!tab) return
+    draggedTabId = tab.dataset.id
+    tab.classList.add('dragging')
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', draggedTabId)
+})
+
+dom.tabList.addEventListener('dragover', (e) => {
+    e.preventDefault()
+    const tab = e.target.closest('.tab')
+    
+    // Clear previous drop indicators
+    dom.tabList.querySelectorAll('.tab').forEach(t => t.classList.remove('drag-over-left', 'drag-over-right'))
+
+    if (tab && tab.dataset.id !== draggedTabId) {
+        const rect = tab.getBoundingClientRect()
+        const midpoint = rect.left + rect.width / 2
+        if (e.clientX < midpoint) tab.classList.add('drag-over-left')
+        else tab.classList.add('drag-over-right')
+    }
+})
+
+dom.tabList.addEventListener('drop', (e) => {
+    e.preventDefault()
+    const tab = e.target.closest('.tab')
+    if (!draggedTabId) return
+
+    let targetId = tab ? tab.dataset.id : null
+    let position = 'after'
+
+    if (tab && tab.dataset.id !== draggedTabId) {
+        const rect = tab.getBoundingClientRect()
+        const midpoint = rect.left + rect.width / 2
+        position = e.clientX < midpoint ? 'before' : 'after'
+    } else if (!tab) {
+        // Dropped on empty space at the end of the tab list
+        targetId = state.tabs[state.tabs.length - 1].id
+        position = 'after'
+        if (targetId === draggedTabId) return
+    } else {
+        return // Dropped on itself
+    }
+
+    tabsMod.reorderTabs(draggedTabId, targetId, position)
+})
+
+dom.tabList.addEventListener('dragend', (e) => {
+    const tab = e.target.closest('.tab')
+    if (tab) tab.classList.remove('dragging')
+    dom.tabList.querySelectorAll('.tab').forEach(t => t.classList.remove('drag-over-left', 'drag-over-right'))
+    draggedTabId = null
+})
+
 // ── Autocorrect (as-you-type) ──────────────────────────────────────────────
 autocorrectMod.initAutocorrect(document)
 

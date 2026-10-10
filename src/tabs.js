@@ -52,6 +52,8 @@ function newTab(filePath = null, content = '', activate = true) {
 
   const tabEl = document.createElement('div')
   tabEl.className = 'tab'
+  tabEl.draggable = true 
+  tabEl.dataset.id = id 
   tabEl.innerHTML = `<span class="tab-name"></span><span class="tab-dot hidden">●</span><button class="tab-close" title="Close tab (Ctrl+W)">✕</button>`
   tabEl.addEventListener('mousedown', e => { if (!e.target.classList.contains('tab-close')) switchTab(id) })
   tabEl.querySelector('.tab-close').addEventListener('click', e => { e.stopPropagation(); requestCloseTab(id) })
@@ -180,6 +182,25 @@ function finalizeTabClose(id) {
   }
 }
 
+// ── Tab Reordering ───────────────────────────────────────────────────────
+function reorderTabs(draggedId, targetId, position) {
+    const draggedIdx = state.tabs.findIndex(t => t.id === draggedId)
+    const targetIdx = state.tabs.findIndex(t => t.id === targetId)
+    if (draggedIdx === -1 || targetIdx === -1 || draggedIdx === targetIdx) return
+
+    const [draggedTab] = state.tabs.splice(draggedIdx, 1)
+    
+    let newIdx = targetIdx
+    if (draggedIdx < targetIdx && position === 'after') newIdx = targetIdx
+    else if (draggedIdx > targetIdx && position === 'before') newIdx = targetIdx
+    else newIdx = position === 'before' ? targetIdx : targetIdx + 1
+
+    state.tabs.splice(newIdx, 0, draggedTab)
+
+    // Re-append DOM elements to match the new state order
+    state.tabs.forEach(t => dom.tabList.appendChild(t.tabEl))
+}
+
 module.exports.activeTab = activeTab
 module.exports.newTab = newTab
 module.exports.updateTabLabel = updateTabLabel
@@ -195,3 +216,4 @@ module.exports.discardAndClose = discardAndClose
 module.exports.cancelClose = cancelClose
 module.exports.advanceCloseQueue = advanceCloseQueue
 module.exports.finalizeTabClose = finalizeTabClose
+module.exports.reorderTabs = reorderTabs

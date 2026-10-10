@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.8.0
+**Added**
+- Added **drag-and-drop** support to rearrange tabs in the top bar.
+
 ## 3.7.0
 
 **Added**
