@@ -645,3 +645,35 @@ body.zen #zen-hint { display: flex; }
 }
 .md-img-inline { max-height: 1.4em; vertical-align: middle; border-radius: 3px; }
 .md-image-missing { font-size: 12px; color: var(--text3); font-style: italic; }
+
+/* ── Code Block Copy Button ─────────────────────────────────────────────── */
+.md-code-block {
+  position: relative; /* Required to position the button inside the block */
+}
+
+.code-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--bg2);
+  color: var(--text2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0; /* Hidden by default, shows on hover */
+  transition: opacity 0.2s ease;
+  z-index: 5;
+  font-family: 'Segoe UI', system-ui, sans-serif; /* Prevents inheriting monospace */
+  user-select: none; /* Prevents the button text from being highlighted with the code */
+}
+
+.md-code-block:hover .code-copy-btn {
+  opacity: 1;
+}
+
+.code-copy-btn:hover {
+  background: var(--bg3);
+  color: var(--text);
+}

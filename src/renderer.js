@@ -107,28 +107,83 @@ autocorrectMod.initAutocorrect(document)
 
 // ── Keyboard ───────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
+  // ── Handle Tab key in Organised view inline edits ──
+  if (e.key === 'Tab' && document.activeElement?.contentEditable === 'true') {
+    e.preventDefault()
+    document.execCommand('insertText', false, '\t')
+    return
+  }
+
+  // ── Handle Tab key in Raw view textarea (indent/unindent lines) ──
+  if (e.key === 'Tab' && document.activeElement?.classList.contains('raw-editor')) {
+    e.preventDefault()
+    const ta = document.activeElement
+    const start = ta.selectionStart
+    const end = ta.selectionEnd
+    const value = ta.value
+    const isShift = e.shiftKey
+
+    if (start === end) {
+      // No selection, just insert a tab at the cursor (if not Shift)
+      if (!isShift) document.execCommand('insertText', false, '\t')
+    } else {
+      // Selection exists: find the start of the first line and end of the last line
+      const lineStart = value.lastIndexOf('\n', start - 1) + 1
+      let lineEnd = value.indexOf('\n', end)
+      if (lineEnd === -1) lineEnd = value.length
+
+      const selectedLines = value.substring(lineStart, lineEnd)
+      let modifiedLines
+
+      if (isShift) {
+        // Shift+Tab: Unindent (remove one leading tab or up to 2 spaces)
+        modifiedLines = selectedLines.split('\n').map(line => {
+          if (line.startsWith('\t')) return line.slice(1)
+          if (line.startsWith('  ')) return line.slice(2)
+          if (line.startsWith(' ')) return line.slice(1)
+          return line
+        }).join('\n')
+      } else {
+        // Tab: Indent (add a tab to the start of each line)
+        modifiedLines = selectedLines.split('\n').map(line => '\t' + line).join('\n')
+      }
+
+      // Select the entire lines and replace them using execCommand to preserve undo
+      ta.setSelectionRange(lineStart, lineEnd)
+      document.execCommand('insertText', false, modifiedLines)
+      
+      // Keep the newly modified lines selected
+      ta.setSelectionRange(lineStart, lineStart + modifiedLines.length)
+    }
+    return
+  }
+
   if (e.ctrlKey || e.metaKey) {
     if (e.key.toLowerCase() === 'n' && e.shiftKey) { e.preventDefault(); fileOpsMod.newWindow() }
     else if (e.key.toLowerCase() === 'n') { /* reserved */ }
     if (e.key.toLowerCase() === 't') { e.preventDefault(); tabsMod.newTab() }
     if (e.key.toLowerCase() === 'w') { e.preventDefault(); if (state.activeTabId) tabsMod.requestCloseTab(state.activeTabId) }
-    if (e.key === 'Tab' && state.tabs.length > 1) {
+    
+    if (e.ctrlKey && e.key === 'Tab' && state.tabs.length > 1) {
       e.preventDefault()
       const idx = state.tabs.findIndex(t => t.id === state.activeTabId)
       const next = e.shiftKey ? (idx - 1 + state.tabs.length) % state.tabs.length : (idx + 1) % state.tabs.length
       tabsMod.switchTab(state.tabs[next].id)
     }
+    
     if (e.key.toLowerCase() === 'o') { e.preventDefault(); fileOpsMod.openFile() }
     if (e.key.toLowerCase() === 's' && !e.shiftKey) { e.preventDefault(); fileOpsMod.saveFile() }
     if (e.key.toLowerCase() === 's' && e.shiftKey) { e.preventDefault(); fileOpsMod.saveAs() }
     if (e.key.toLowerCase() === 'f') { e.preventDefault(); uiMod.openFindBar() }
     if (e.key.toLowerCase() === 'z' && e.shiftKey) { e.preventDefault(); uiMod.toggleZen() }
+    
     if (state.currentView === 'organised' && document.activeElement?.classList.contains('line-text')) {
       if (e.key === 'b') { e.preventDefault(); viewsMod.applyFormat('bold') }
       if (e.key === 'i') { e.preventDefault(); viewsMod.applyFormat('italic') }
       if (e.key === 'u') { e.preventDefault(); viewsMod.applyFormat('underline') }
     }
   }
+  
   if (e.key === 'Escape') {
     if (state.zenMode) { uiMod.toggleZen(); return }
     uiMod.closeTableBuilder(); dom.saveDialog.classList.add('hidden'); uiMod.closeDropdown()

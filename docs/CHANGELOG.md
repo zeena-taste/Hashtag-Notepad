@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.9.0
+**Added**
+- Code Block Copy Button: Markdown code blocks now feature a hover-revealed "Copy" button in the top-right corner for quick clipboard copying.
+**Fixed**
+- Tab Key Undo History: Pressing the Tab key to insert indentation or replace highlighted text now correctly preserves the native undo stack (Ctrl+Z works again).
+- Multi-step Undo: Fixed an issue where background syncing between the Organised and Raw views was wiping the native undo history, limiting Ctrl+Z to a single step.
+
 ## 3.8.0
 **Added**
 - Added **drag-and-drop** support to rearrange tabs in the top bar.

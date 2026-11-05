@@ -11,8 +11,35 @@ const path = require('path')
 function writeRawText(t, text) {
   const ta = t.textareaEl
   if (ta.value === text) return
-  ta.value = text
+  
+  setEditorValue(ta, text) 
+  
   ta.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+// ── Code Block Builder ─────────────────────────────────────────────────────
+function makeCodeBlock(lines) {
+    const block = document.createElement('div')
+    block.className = 'md-code-block'
+    
+    // Store the raw text in a variable so the button's own text doesn't get copied
+    const rawText = lines.join('\n')
+    block.textContent = rawText 
+
+    const copyBtn = document.createElement('button')
+    copyBtn.className = 'code-copy-btn'
+    copyBtn.textContent = 'Copy'
+    
+    copyBtn.addEventListener('click', (e) => {
+        e.stopPropagation() // Prevent triggering any section edit clicks
+        navigator.clipboard.writeText(rawText).then(() => {
+            copyBtn.textContent = 'Copied!'
+            setTimeout(() => { copyBtn.textContent = 'Copy' }, 2000)
+        }).catch(err => console.error('Failed to copy code:', err))
+    })
+
+    block.appendChild(copyBtn)
+    return block
 }
 
 // ── Parse ──────────────────────────────────────────────────────────────────
@@ -534,7 +561,7 @@ function buildBody(body, s, hasChildren) {
 
   while (i < lines.length) {
     const line = lines[i]
-    if (line.startsWith('```')) { if (inCode) { const pre = document.createElement('div'); pre.className = 'md-code-block'; pre.textContent = codeLines.join('\n'); body.appendChild(pre); codeLines = []; inCode = false } else { inCode = true } i++; continue }
+    if (line.startsWith('```')) { if (inCode) { body.appendChild(makeCodeBlock(codeLines)); codeLines = []; inCode = false } else { inCode = true } i++; continue }
     if (inCode) { codeLines.push(line); i++; continue }
     if (t.isMd) {
       if (isTableRow(line)) {
@@ -585,7 +612,7 @@ function buildBody(body, s, hasChildren) {
       const txt = makeEditableSpan(rest, (val) => commitInlineEdit(s.title, lineIdx, ws + val))
  item.appendChild(txt); body.appendChild(item); i++
   }
-  if (inCode) { const pre = document.createElement('div'); pre.className = 'md-code-block'; pre.textContent = codeLines.join('\n'); body.appendChild(pre) }
+  if (inCode) { body.appendChild(makeCodeBlock(codeLines)) }
 }
 
 function openSectionEdit(block, s) {
